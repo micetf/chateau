@@ -1,26 +1,33 @@
 var webpack = require("webpack");
+const path = require("path");
 
 module.exports = {
-    entry: ['./app/script.js'],
+    entry: {
+        script: ["./app/script.js", "./app/paypal.js", "./app/contact.js"],
+    },
     output: {
-        filename: 'script.min.js',
-        path: './js'
+        filename: "[name].min.js",
+        path: path.resolve(__dirname, "js"),
     },
     module: {
-        loaders: [{
-            test: /.js$/,
-            loader: 'babel-loader',
-            exclude: /node_modules/,
-            query: {
-                presets: ['es2015']
-            }
-        }]
+        rules: [
+            {
+                test: /\.(?:js|mjs|cjs)$/,
+                exclude: /node_modules/,
+                use: {
+                    loader: "babel-loader",
+                    options: {
+                        presets: [
+                            ["@babel/preset-env", { targets: "defaults" }],
+                        ],
+                    },
+                },
+            },
+        ],
     },
     plugins: [
-        new webpack.optimize.UglifyJsPlugin({
-            compress: {
-                warnings: false
-            }
-        })
-    ]
-}
+        new webpack.LoaderOptionsPlugin({
+            minimize: true,
+        }),
+    ],
+};
