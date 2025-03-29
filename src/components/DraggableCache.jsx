@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import CacheSvg from "./CacheSvg";
 
 function DraggableCache({
     color,
@@ -41,7 +42,15 @@ function DraggableCache({
             if (isOverTrash(e.clientX, e.clientY)) {
                 if (!isSource) {
                     // Si ce n'est pas une source, on le supprime
-                    setIsVisible(false);
+                    // Animation de suppression
+                    if (cacheRef.current) {
+                        cacheRef.current.classList.add("deleting");
+                        setTimeout(() => {
+                            setIsVisible(false);
+                        }, 300);
+                    } else {
+                        setIsVisible(false);
+                    }
                 }
             } else if (isDragging && isSource) {
                 // Si c'est une source et qu'on n'est pas sur la poubelle, créer un clone
@@ -153,8 +162,6 @@ function DraggableCache({
                     top: `${position.y}px`,
                     width: `${size}px`,
                     height: `${size}px`,
-                    backgroundColor: color,
-                    border: "2px solid black",
                     boxShadow: isDragging
                         ? "0 8px 16px rgba(0,0,0,0.5)"
                         : "0 4px 8px rgba(0,0,0,0.3)",
@@ -174,7 +181,9 @@ function DraggableCache({
                         ? "Glisser pour créer un cache"
                         : "Glisser ou déposer dans la poubelle pour supprimer"
                 }
-            />
+            >
+                <CacheSvg color={color} size={size} />
+            </div>
             {cloneElements}
         </>
     );
