@@ -46,6 +46,8 @@ function DraggableCache({
             } else if (isDragging && isSource) {
                 // Si c'est une source et qu'on n'est pas sur la poubelle, créer un clone
                 const newId = nextIdRef.current++;
+
+                // Calculer la position exacte pour le nouveau clone
                 const newX = e.clientX - offset.current.x;
                 const newY = e.clientY - offset.current.y;
 
@@ -66,6 +68,7 @@ function DraggableCache({
             }
 
             setIsDragging(false);
+            document.body.style.cursor = "default";
         };
 
         // Fonction pour vérifier si les coordonnées sont au-dessus de la poubelle
@@ -76,7 +79,7 @@ function DraggableCache({
             const trashRect = trashElement.getBoundingClientRect();
 
             // Zone de détection élargie pour faciliter le drop
-            const buffer = 30;
+            const buffer = 40;
             return (
                 x >= trashRect.left - buffer &&
                 x <= trashRect.right + buffer &&
@@ -86,20 +89,25 @@ function DraggableCache({
         };
 
         if (isDragging) {
+            // Ajouter les événements au document entier
             document.addEventListener("mousemove", handleMouseMove);
             document.addEventListener("mouseup", handleMouseUp);
+            // Modifier le curseur pour tout le document pendant le dragging
+            document.body.style.cursor = "grabbing";
         }
 
         return () => {
             document.removeEventListener("mousemove", handleMouseMove);
             document.removeEventListener("mouseup", handleMouseUp);
+            document.body.style.cursor = "default";
         };
-    }, [isDragging, isSource, clones, position, initialX, initialY, color]);
+    }, [isDragging, isSource, clones, color, initialX, initialY]);
 
     const handleMouseDown = (e) => {
         if (!cacheRef.current) return;
 
         e.preventDefault(); // Empêcher la sélection de texte
+        e.stopPropagation(); // Empêcher la propagation vers des éléments parents
 
         // Calculer le décalage entre la position du clic et le coin de l'élément
         const rect = cacheRef.current.getBoundingClientRect();
@@ -133,24 +141,6 @@ function DraggableCache({
     // Si l'élément a été supprimé, ne rien rendre
     if (!isVisible) return null;
 
-    // Style pour centrer l'élément dans la barre latérale si nécessaire
-    let styleModifier = {};
-
-    if (isSidebarItem) {
-        styleModifier = {
-            left: "50%",
-            transform: isDragging
-                ? "translate(-50%, 0) scale(1.05)"
-                : "translate(-50%, 0)",
-            transformOrigin: "center",
-        };
-    } else {
-        styleModifier = {
-            transform: isDragging ? "scale(1.05)" : "scale(1)",
-            transformOrigin: "center",
-        };
-    }
-
     return (
         <>
             <div
@@ -158,7 +148,7 @@ function DraggableCache({
                 className="draggable-cache"
                 onMouseDown={handleMouseDown}
                 style={{
-                    position: "absolute",
+                    position: "fixed", // Utiliser fixed pour se positionner par rapport au viewport
                     left: `${position.x}px`,
                     top: `${position.y}px`,
                     width: `${size}px`,
@@ -170,11 +160,13 @@ function DraggableCache({
                         : "0 4px 8px rgba(0,0,0,0.3)",
                     cursor: isDragging ? "grabbing" : "grab",
                     touchAction: "none",
-                    zIndex: isDragging ? 150 : isSource ? 50 : 100,
-                    ...styleModifier,
+                    zIndex: isDragging ? 1000 : isSource ? 100 : 500,
                     transition: isDragging
                         ? "none"
                         : "box-shadow 0.2s, transform 0.2s",
+                    transform: isDragging ? "scale(1.05)" : "scale(1)",
+                    transformOrigin: "center",
+                    pointerEvents: "auto", // S'assurer que l'élément capture les événements souris
                     userSelect: "none",
                 }}
                 title={

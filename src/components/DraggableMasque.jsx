@@ -14,15 +14,41 @@ function DraggableMasque({
     const [clones, setClones] = useState([]);
     const [isVisible, setIsVisible] = useState(true);
     const masqueRef = useRef(null);
+    const parentRef = useRef(null);
     const offset = useRef({ x: 0, y: 0 });
     const nextIdRef = useRef(0);
+    const [absolutePosition, setAbsolutePosition] = useState({ x: 0, y: 0 });
 
-    // Mettre à jour la position si les coordonnées initiales changent
+    // Obtenir la référence au parent
     useEffect(() => {
-        if (isSource) {
-            setPosition({ x: initialX, y: initialY });
+        if (masqueRef.current && isSource) {
+            parentRef.current = masqueRef.current.parentElement;
         }
-    }, [initialX, initialY, isSource]);
+    }, [isSource]);
+
+    // Calculer la position absolue initiale lorsque le composant est monté
+    useEffect(() => {
+        if (masqueRef.current && isSource && isSidebarItem) {
+            const rect = masqueRef.current.getBoundingClientRect();
+            const parentRect =
+                masqueRef.current.parentElement.getBoundingClientRect();
+
+            // Positionner au centre du parent
+            const centerX =
+                parentRect.left + (parentRect.width - masqueSize) / 2;
+            const centerY =
+                parentRect.top + (parentRect.height - masqueSize) / 2;
+
+            setAbsolutePosition({ x: centerX, y: centerY });
+        }
+    }, [isSource, isSidebarItem, masqueSize]);
+
+    // Mettre à jour la position si la position absolue change
+    useEffect(() => {
+        if (isSource && !isDragging) {
+            setPosition({ x: absolutePosition.x, y: absolutePosition.y });
+        }
+    }, [absolutePosition, isSource, isDragging]);
 
     useEffect(() => {
         const handleMouseMove = (e) => {
@@ -47,6 +73,8 @@ function DraggableMasque({
             } else if (isDragging && isSource) {
                 // Si c'est une source et qu'on n'est pas sur la poubelle, créer un clone
                 const newId = nextIdRef.current++;
+
+                // Calculer la position exacte pour le nouveau clone
                 const newX = e.clientX - offset.current.x;
                 const newY = e.clientY - offset.current.y;
 
@@ -62,10 +90,11 @@ function DraggableMasque({
 
             // Si c'est une source, revenir à la position initiale
             if (isSource) {
-                setPosition({ x: initialX, y: initialY });
+                setPosition(absolutePosition);
             }
 
             setIsDragging(false);
+            document.body.style.cursor = "default";
         };
 
         // Fonction pour vérifier si les coordonnées sont au-dessus de la poubelle
@@ -76,7 +105,7 @@ function DraggableMasque({
             const trashRect = trashElement.getBoundingClientRect();
 
             // Zone de détection élargie pour faciliter le drop
-            const buffer = 30;
+            const buffer = 40;
             return (
                 x >= trashRect.left - buffer &&
                 x <= trashRect.right + buffer &&
@@ -86,20 +115,46 @@ function DraggableMasque({
         };
 
         if (isDragging) {
+            // Ajouter les événements au document entier
             document.addEventListener("mousemove", handleMouseMove);
             document.addEventListener("mouseup", handleMouseUp);
+            // Modifier le curseur pour tout le document pendant le dragging
+            document.body.style.cursor = "grabbing";
         }
 
         return () => {
             document.removeEventListener("mousemove", handleMouseMove);
             document.removeEventListener("mouseup", handleMouseUp);
+            document.body.style.cursor = "default";
         };
-    }, [isDragging, isSource, clones, position, initialX, initialY]);
+    }, [isDragging, isSource, clones, absolutePosition]);
+
+    // Gérer le redimensionnement de la fenêtre
+    useEffect(() => {
+        const handleResize = () => {
+            if (masqueRef.current && isSource && isSidebarItem) {
+                const parentRect =
+                    masqueRef.current.parentElement.getBoundingClientRect();
+
+                // Recalculer le centrage
+                const centerX =
+                    parentRect.left + (parentRect.width - masqueSize) / 2;
+                const centerY =
+                    parentRect.top + (parentRect.height - masqueSize) / 2;
+
+                setAbsolutePosition({ x: centerX, y: centerY });
+            }
+        };
+
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, [isSource, isSidebarItem, masqueSize]);
 
     const handleMouseDown = (e) => {
         if (!masqueRef.current) return;
 
         e.preventDefault(); // Empêcher la sélection de texte
+        e.stopPropagation(); // Empêcher la propagation vers des éléments parents
 
         // Calculer le décalage entre la position du clic et le coin de l'élément
         const rect = masqueRef.current.getBoundingClientRect();
@@ -137,24 +192,6 @@ function DraggableMasque({
     const plusDix = ordre === "0-99" ? "+10" : "-10";
     const moinsDix = ordre === "0-99" ? "-10" : "+10";
 
-    // Style pour centrer l'élément dans la barre latérale si nécessaire
-    let styleModifier = {};
-
-    if (isSidebarItem) {
-        styleModifier = {
-            left: "50%",
-            transform: isDragging
-                ? "translate(-50%, 0) scale(1.05)"
-                : "translate(-50%, 0)",
-            transformOrigin: "center",
-        };
-    } else {
-        styleModifier = {
-            transform: isDragging ? "scale(1.05)" : "scale(1)",
-            transformOrigin: "center",
-        };
-    }
-
     return (
         <>
             <div
@@ -162,7 +199,7 @@ function DraggableMasque({
                 className="draggable-masque"
                 onMouseDown={handleMouseDown}
                 style={{
-                    position: "absolute",
+                    position: "fixed", // Utiliser fixed pour se positionner par rapport au viewport
                     left: `${position.x}px`,
                     top: `${position.y}px`,
                     width: `${masqueSize}px`,
@@ -174,11 +211,13 @@ function DraggableMasque({
                         : "0 4px 8px rgba(0,0,0,0.3)",
                     cursor: isDragging ? "grabbing" : "grab",
                     touchAction: "none",
-                    zIndex: isDragging ? 150 : isSource ? 50 : 100,
-                    ...styleModifier,
+                    zIndex: isDragging ? 1000 : isSource ? 100 : 500,
                     transition: isDragging
                         ? "none"
                         : "box-shadow 0.2s, transform 0.2s",
+                    transform: isDragging ? "scale(1.05)" : "scale(1)",
+                    transformOrigin: "center",
+                    pointerEvents: "auto", // S'assurer que l'élément capture les événements souris
                     userSelect: "none",
                     display: "grid",
                     gridTemplateColumns: "repeat(3, 1fr)",
