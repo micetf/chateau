@@ -1,10 +1,10 @@
-export default PaypalButton;
 import { useEffect } from "react";
 
 export function PaypalButton() {
     useEffect(() => {
-        // Créer le formulaire PayPal caché
+        // Créer le formulaire PayPal caché qui sera utilisé par le bouton dans la navbar
         const form = document.createElement("form");
+        form.id = "paypal-form";
         form.action = "https://www.paypal.com/cgi-bin/webscr";
         form.method = "post";
         form.target = "_top";
@@ -25,6 +25,7 @@ export function PaypalButton() {
             {
                 type: "image",
                 name: "submit",
+                id: "paypal-submit-btn",
             },
         ];
 
@@ -42,31 +43,35 @@ export function PaypalButton() {
         // Ajouter le formulaire au document
         document.body.appendChild(form);
 
-        // Configurer le bouton PayPal
-        const paypalButton = document.querySelector("#paypal");
-        if (paypalButton) {
-            paypalButton.style.cursor = "pointer";
-            paypalButton.title =
-                "Si vous pensez que cet outil le mérite... Merci !";
-            paypalButton.addEventListener("click", (e) => {
+        // Récupérer le bouton PayPal de l'index.html et le configurer pour soumettre notre formulaire
+        const originalPaypalBtn = document.getElementById("paypal");
+        if (originalPaypalBtn) {
+            // Utiliser l'élément existant pour activer notre formulaire
+            originalPaypalBtn.addEventListener("click", (e) => {
                 e.preventDefault();
-                e.stopPropagation();
-                form.querySelector("[name=submit]").click();
+                const submitBtn = document.getElementById("paypal-submit-btn");
+                if (submitBtn) {
+                    submitBtn.click();
+                }
             });
         }
 
         // Nettoyage à la désinstallation du composant
         return () => {
+            const form = document.getElementById("paypal-form");
             if (form && document.body.contains(form)) {
                 document.body.removeChild(form);
             }
 
-            if (paypalButton) {
-                paypalButton.removeEventListener("click", () => {});
+            // Nettoyer l'écouteur d'événements sur le bouton original si nécessaire
+            if (originalPaypalBtn) {
+                originalPaypalBtn.removeEventListener("click", () => {});
             }
         };
     }, []);
 
-    // Le bouton PayPal est déjà dans le HTML principal, donc ce composant ne rend rien directement
+    // Ce composant ne rend rien directement, il gère juste le comportement du bouton PayPal
     return null;
 }
+
+export default PaypalButton;
