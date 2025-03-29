@@ -1,151 +1,109 @@
-import { useState, useEffect, useRef } from "react";
-import Draggable from "react-draggable";
+import React, { useState, useRef, useEffect } from "react";
 
-// Composant d'élément draggable
-const DraggableCacheItem = ({
-    initialPosition,
-    cellSize,
-    color,
-    index,
-    itemId,
-    onDragStop,
-}) => {
-    const nodeRef = useRef(null);
+function DraggableCache({ color, size, initialX, initialY, isSource = false }) {
+    const [position, setPosition] = useState({ x: initialX, y: initialY });
     const [isDragging, setIsDragging] = useState(false);
+    const [clones, setClones] = useState([]);
+    const cacheRef = useRef(null);
+    const offset = useRef({ x: 0, y: 0 });
+    const nextIdRef = useRef(0);
 
-    const handleStart = () => {
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!isDragging) return;
+
+            // Calculer la nouvelle position en tenant compte du décalage
+            const newX = e.clientX - offset.current.x;
+            const newY = e.clientY - offset.current.y;
+
+            setPosition({ x: newX, y: newY });
+        };
+
+        const handleMouseUp = () => {
+            if (isDragging && isSource) {
+                // Si c'est une source, créer un clone et revenir à la position initiale
+                const newId = nextIdRef.current++;
+                setClones([
+                    ...clones,
+                    {
+                        id: newId,
+                        x: position.x,
+                        y: position.y,
+                        color: color,
+                    },
+                ]);
+                setPosition({ x: initialX, y: initialY });
+            }
+            setIsDragging(false);
+        };
+
+        if (isDragging) {
+            document.addEventListener("mousemove", handleMouseMove);
+            document.addEventListener("mouseup", handleMouseUp);
+        }
+
+        return () => {
+            document.removeEventListener("mousemove", handleMouseMove);
+            document.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [isDragging, isSource, clones, position, initialX, initialY, color]);
+
+    const handleMouseDown = (e) => {
+        if (!cacheRef.current) return;
+
+        // Calculer le décalage entre la position du clic et le coin de l'élément
+        const rect = cacheRef.current.getBoundingClientRect();
+        offset.current = {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+        };
+
         setIsDragging(true);
     };
 
-    const handleStop = (e, ui) => {
-        setIsDragging(false);
-        onDragStop(e, ui, itemId);
-    };
+    // Rendu des clones (uniquement si c'est une source)
+    const cloneElements = isSource
+        ? clones.map((clone) => (
+              <DraggableCache
+                  key={clone.id}
+                  color={clone.color}
+                  size={size}
+                  initialX={clone.x}
+                  initialY={clone.y}
+                  isSource={false}
+              />
+          ))
+        : null;
 
     return (
-        <Draggable
-            defaultPosition={initialPosition}
-            onStart={handleStart}
-            onStop={handleStop}
-            nodeRef={nodeRef}
-            grid={[1, 1]}
-            scale={1}
-        >
+        <>
             <div
-                ref={nodeRef}
-                className="cursor-grab active:cursor-grabbing"
+                ref={cacheRef}
+                onMouseDown={handleMouseDown}
                 style={{
                     position: "absolute",
-                    width: `${cellSize}px`,
-                    height: `${cellSize}px`,
+                    left: `${position.x}px`,
+                    top: `${position.y}px`,
+                    width: `${size}px`,
+                    height: `${size}px`,
                     backgroundColor: color,
                     border: "2px solid black",
                     boxShadow: isDragging
                         ? "0 8px 16px rgba(0,0,0,0.5)"
                         : "0 4px 8px rgba(0,0,0,0.3)",
-                    zIndex: isDragging ? 50 : 30,
-                    transform: isDragging ? "scale(1.05)" : "scale(1)",
-                    transition: "box-shadow 0.2s, transform 0.2s",
+                    cursor: isDragging ? "grabbing" : "grab",
                     touchAction: "none",
+                    zIndex: isDragging ? 150 : 100,
+                    transform: isDragging ? "scale(1.05)" : "scale(1)",
+                    transition: isDragging
+                        ? "none"
+                        : "box-shadow 0.2s, transform 0.2s",
+                    userSelect: "none",
                 }}
-                data-cache-id={itemId !== undefined ? itemId : "source"}
-                data-cache-index={index}
             />
-        </Draggable>
-    );
-};
-
-// Composant principal
-const DraggableCache = ({
-    color,
-    index,
-    cellSize,
-    sectionHeight,
-    initialX = 30,
-    initialY = 100,
-    trashPosition,
-}) => {
-    const [cacheItems, setCacheItems] = useState([]);
-    const [initialPosition, setInitialPosition] = useState({
-        x: initialX,
-        y: initialY,
-    });
-    const nextIdRef = useRef(0);
-
-    // Mettre à jour la position initiale si les props changent
-    useEffect(() => {
-        setInitialPosition({ x: initialX, y: initialY });
-    }, [initialX, initialY]);
-
-    // Vérifier si un item est dans la poubelle
-    const isInTrash = (position) => {
-        if (!trashPosition) return false;
-
-        const distance = Math.sqrt(
-            Math.pow(position.x - trashPosition.x, 2) +
-                Math.pow(position.y - trashPosition.y, 2)
-        );
-
-        return distance < cellSize * 1.5; // Rayon de la zone de détection de la poubelle
-    };
-
-    // Gérer l'arrêt du drag
-    const handleDragStop = (e, ui, id) => {
-        const position = { x: ui.x, y: ui.y };
-
-        // Si c'est l'élément source (sans id), créer un nouvel élément
-        if (id === undefined) {
-            createNewItem();
-            return;
-        }
-
-        // Si c'est un élément créé et qu'il est sur la poubelle, le supprimer
-        if (isInTrash(position)) {
-            setCacheItems((prev) => prev.filter((item) => item.id !== id));
-        }
-    };
-
-    // Créer un nouvel élément
-    const createNewItem = () => {
-        const newItem = {
-            id: nextIdRef.current,
-            x: initialPosition.x,
-            y: initialPosition.y,
-        };
-
-        nextIdRef.current += 1;
-        setCacheItems((prev) => [...prev, newItem]);
-    };
-
-    if (cellSize <= 0) {
-        return null;
-    }
-
-    return (
-        <>
-            {/* Élément original qui sert de "fabrique" */}
-            <DraggableCacheItem
-                initialPosition={initialPosition}
-                cellSize={cellSize}
-                color={color}
-                index={index}
-                onDragStop={handleDragStop}
-            />
-
-            {/* Éléments créés dynamiquement */}
-            {cacheItems.map((item) => (
-                <DraggableCacheItem
-                    key={item.id}
-                    initialPosition={{ x: item.x, y: item.y }}
-                    cellSize={cellSize}
-                    color={color}
-                    index={index}
-                    itemId={item.id}
-                    onDragStop={handleDragStop}
-                />
-            ))}
+            {cloneElements}
         </>
     );
-};
+}
 
 export default DraggableCache;

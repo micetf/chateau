@@ -7,7 +7,6 @@ import DraggableCache from "./components/DraggableCache";
 import DraggableMasque from "./components/DraggableMasque";
 
 function App() {
-    const [ordre, setOrdre] = useState("99-0");
     const [windowSize, setWindowSize] = useState({
         width: window.innerWidth,
         height: window.innerHeight,
@@ -26,9 +25,7 @@ function App() {
             });
         };
 
-        // Appel initial pour s'assurer d'avoir les bonnes dimensions
         handleResize();
-
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
     }, []);
@@ -42,163 +39,107 @@ function App() {
 
     // Gérer le chargement de l'image du château
     const handleChateauLoad = (width) => {
-        // S'assurer que la largeur est un nombre valide
         if (width && typeof width === "number" && width > 0) {
             setChateauWidth(width);
-            // Calculer la taille des cellules en fonction de la largeur du château
             const newCellSize = Math.max(30, Math.round((width / 867) * 50));
             setCellSize(newCellSize);
-        } else {
-            console.error("Largeur de château invalide:", width);
         }
     };
 
     const sectionHeight = windowSize.height - headerHeight;
-
-    // Les couleurs pour les caches
     const cacheColors = ["#FF9117", "#B33514", "#FF5700", "#0079B3", "#00FFEA"];
+    const sideColumnWidth = Math.min(
+        150,
+        Math.max(100, windowSize.width * 0.15)
+    );
 
-    // Calculer les dimensions pour le centrage
-    const mainAreaWidth = windowSize.width;
-    const sideColumnWidth = Math.min(150, Math.max(100, mainAreaWidth * 0.15));
-    const centerAreaWidth = mainAreaWidth - sideColumnWidth * 2;
-
-    // Calculer les positions des caches
-    const cachePositions = cacheColors.map((_, index) => {
-        const y = 100 + index * (cellSize + 22); // Espacement vertical
+    // Calculer la position initiale pour chaque cache
+    const getCachePosition = (index) => {
         return {
-            x: sideColumnWidth / 2, // Centré dans la colonne gauche
-            y: y,
+            x: sideColumnWidth / 2 - (cellSize ? cellSize / 2 : 0),
+            y: 100 + index * (cellSize ? cellSize + 20 : 60),
         };
-    });
-
-    // Calculer la position du masque
-    const masquePosition = {
-        x: mainAreaWidth - sideColumnWidth / 2 - cellSize * 1.5, // Centré dans la colonne droite
-        y: 100, // En haut avec un espacement
     };
 
-    // Calculer la position de la poubelle
-    const trashPosition = {
-        x: sideColumnWidth / 2, // Centré dans la colonne gauche
-        y: sectionHeight - 80, // En bas avec un espacement
-    };
-
-    // Calculer la position du bouton d'inversion
-    const switchButtonPosition = {
-        x: mainAreaWidth - sideColumnWidth / 2, // Centré dans la colonne droite
-        y: sectionHeight - 80, // En bas avec un espacement
+    // Calculer la position initiale pour le masque
+    const getMasquePosition = () => {
+        return {
+            x:
+                windowSize.width -
+                sideColumnWidth / 2 -
+                (cellSize ? cellSize * 1.5 : 45),
+            y: 100,
+        };
     };
 
     return (
         <>
-            <Header ref={headerRef} ordre={ordre} setOrdre={setOrdre} />
+            <Header ref={headerRef} />
 
             <div
                 className="relative"
                 style={{
                     height: `${sectionHeight}px`,
-                    userSelect: "none", // Empêche la sélection de texte lors du glisser-déposer
+                    overflow: "hidden",
+                    userSelect: "none",
                 }}
             >
-                {/* Zone centrale pour le château */}
-                <div className="flex justify-center items-center h-full">
-                    <Chateau
-                        ordre={ordre}
-                        height={sectionHeight - 40}
-                        onLoad={handleChateauLoad}
-                    />
+                {/* Disposition en trois colonnes */}
+                <div className="flex h-full">
+                    {/* Colonne gauche - Caches */}
+                    <div
+                        style={{
+                            width: `${sideColumnWidth}px`,
+                            minWidth: "100px",
+                        }}
+                    >
+                        <div className="h-10"></div>
+                        {/* Les caches sources sont placés directement dans App */}
+                    </div>
+
+                    {/* Colonne centrale - Château */}
+                    <div className="flex-grow flex justify-center items-center">
+                        <Chateau
+                            ordre="99-0" // Valeur fixe maintenant
+                            height={sectionHeight - 40}
+                            onLoad={handleChateauLoad}
+                        />
+                    </div>
+
+                    {/* Colonne droite */}
+                    <div
+                        style={{
+                            width: `${sideColumnWidth}px`,
+                            minWidth: "100px",
+                        }}
+                    >
+                        <div className="h-10"></div>
+                        {/* Le masque source est placé directement dans App */}
+                    </div>
                 </div>
 
+                {/* Éléments draggables sources */}
                 {cellSize > 0 && (
                     <>
-                        {/* Titre des caches */}
-                        <div
-                            className="absolute text-text-primary font-semibold"
-                            style={{
-                                left: `${sideColumnWidth / 2 - 20}px`,
-                                top: "20px",
-                                textAlign: "center",
-                            }}
-                        >
-                            Caches
-                        </div>
-
-                        {/* Caches */}
+                        {/* Caches sources */}
                         {cacheColors.map((color, index) => (
                             <DraggableCache
-                                key={`cache-${index}`}
+                                key={index}
                                 color={color}
-                                index={index}
-                                cellSize={cellSize}
-                                headerHeight={headerHeight}
-                                sectionHeight={sectionHeight}
-                                chateauWidth={chateauWidth}
-                                windowWidth={windowSize.width}
-                                initialX={cachePositions[index].x}
-                                initialY={cachePositions[index].y}
-                                trashPosition={trashPosition}
+                                size={cellSize}
+                                initialX={getCachePosition(index).x}
+                                initialY={getCachePosition(index).y}
+                                isSource={true}
                             />
                         ))}
 
-                        {/* Titre du masque */}
-                        <div
-                            className="absolute text-text-primary font-semibold"
-                            style={{
-                                right: `${sideColumnWidth / 2 - 25}px`,
-                                top: "20px",
-                                textAlign: "center",
-                            }}
-                        >
-                            Masque
-                        </div>
-
-                        {/* Masque */}
+                        {/* Masque source */}
                         <DraggableMasque
-                            ordre={ordre}
                             cellSize={cellSize}
-                            headerHeight={headerHeight}
-                            sectionHeight={sectionHeight}
-                            chateauWidth={chateauWidth}
-                            windowWidth={windowSize.width}
-                            initialX={masquePosition.x}
-                            initialY={masquePosition.y}
-                            trashPosition={trashPosition}
+                            initialX={getMasquePosition().x}
+                            initialY={getMasquePosition().y}
+                            isSource={true}
                         />
-
-                        {/* Poubelle */}
-                        <div
-                            className="absolute flex flex-col items-center"
-                            style={{
-                                left: `${trashPosition.x - cellSize}px`,
-                                bottom: `20px`,
-                            }}
-                        >
-                            <img
-                                id="poubelle"
-                                src="/img/poubelle.png"
-                                alt="Poubelle"
-                                width={cellSize * 1.5}
-                                className="mb-1"
-                            />
-                            <div className="text-xs text-text-primary">
-                                Supprimer
-                            </div>
-                        </div>
-
-                        {/* Bouton d'inversion */}
-                        <button
-                            className="absolute px-3 py-2 bg-header rounded text-text-primary text-xs font-bold hover:bg-opacity-80 transition-colors"
-                            style={{
-                                right: `${sideColumnWidth / 2 - 40}px`,
-                                bottom: `20px`,
-                            }}
-                            onClick={() =>
-                                setOrdre(ordre === "0-99" ? "99-0" : "0-99")
-                            }
-                        >
-                            {ordre === "0-99" ? "↓ 0 à 99 ↓" : "↑ 99 à 0 ↑"}
-                        </button>
                     </>
                 )}
             </div>
