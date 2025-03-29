@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html class="no-js" lang="fr">
+<html lang="fr">
     <head>
-        <meta charset="utf-8" />
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Le château des nombres</title>
         <meta
             name="description"
@@ -11,55 +12,46 @@
             name="keywords"
             content="école, primaire, maths, ermel, structuration des nombres, château des nombres"
         />
-        <meta name="author" content="Frédéric MISERY - Version du 22/12/2013" />
-        <meta name="viewport" content="width=device-width" />
-        <link id="style" rel="stylesheet" href="./css/style.css" />
-        <link rel="canonical" href="http://micetf.fr/chateau" />
+        <meta name="author" content="Frédéric MISERY - Version du 28/03/2025" />
+        <link rel="canonical" href="https://micetf.fr/chateau" />
     </head>
     <body>
+        <div id="root"></div>
+
+        <!-- Préchargement des images -->
+        <link rel="preload" as="image" href="/img/chateau.png" />
+        <link rel="preload" as="image" href="/img/chateau-inverse.png" />
+        <link rel="preload" as="image" href="/img/poubelle.png" />
+        <link rel="preload" as="image" href="/img-micetf/don.gif" />
+
+        <!-- Éléments cachés requis par les composants -->
         <img
-            style="position: fixed; bottom: 0; left: 0"
-            width="0"
+            style="
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                visibility: hidden;
+                width: 0;
+                height: 0;
+            "
             id="poubelle"
-            src="./img/poubelle.png"
+            src="/img/poubelle.png"
             alt="Poubelle"
         />
         <input
-            style="position: fixed; bottom: 0; right: 0"
+            style="
+                position: fixed;
+                bottom: 0;
+                right: 0;
+                visibility: hidden;
+                width: 0;
+                height: 0;
+            "
             type="image"
             id="paypal"
-            src="../img-micetf/don.gif"
+            src="/img-micetf/don.gif"
             alt="Faire un don"
         />
-
-        <header>
-            <h1>Le château des nombres</h1>
-            <p>
-                Numérotation depuis le
-                <select name="ordre" id="ordre" value="99-0">
-                    <option value="99-0">premier étage</option>
-                    <option value="0-99">dernier étage</option>
-                </select>
-                Créé par
-                <a href="http://micetf.fr" title="Des Outils Pour La Classe"
-                    >MiCetF</a
-                >
-                (2013) -
-                <a href="#" id="contact">Contact</a>
-            </p>
-        </header>
-        <section>
-            <img
-                id="chateau"
-                src="./img/chateau-inverse.png"
-                alt="chateau"
-                title="Le château des nombres"
-            />
-        </section>
-
-        <script src="./js/jquery.min.js"></script>
-        <script src="./js/jquery-ui.min.js"></script>
-        <script src="./js/jquery-touchpunch.min.js"></script>
-        <script src="./js/script.min.js"></script>
+        <script type="module" src="/src/main.jsx"></script>
     </body>
 </html>
