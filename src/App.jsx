@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import Chateau from "./components/Chateau";
 import Header from "./components/Header";
 import ContactLink from "./components/ContactLink";
+import PaypalButton from "./components/PaypalButton";
 import DraggableCache from "./components/DraggableCache";
 import DraggableMasque from "./components/DraggableMasque";
 import HelpOverlay from "./components/HelpOverlay";
@@ -163,7 +164,7 @@ function App() {
                     {/* Sélecteur d'ordre */}
                     <button
                         onClick={toggleOrdre}
-                        className="bg-header hover:bg-opacity-80 text-text-primary px-3 py-1 rounded-md text-sm font-medium transition-colors border border-text-secondary shadow-md"
+                        className="bg-header hover:bg-opacity-80 text-text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors border border-text-secondary shadow-md"
                         title="Changer l'ordre de numérotation"
                     >
                         Ordre: {ordre}
@@ -172,7 +173,7 @@ function App() {
                     {/* Bouton d'aide */}
                     <button
                         onClick={toggleHelp}
-                        className="bg-header hover:bg-opacity-80 text-text-primary w-8 h-8 rounded-full text-sm font-bold transition-colors border border-text-secondary shadow-md flex items-center justify-center"
+                        className="bg-header hover:bg-opacity-80 text-text-primary w-10 h-10 rounded-full text-lg font-bold transition-colors border border-text-secondary shadow-md flex items-center justify-center"
                         title="Afficher l'aide"
                     >
                         ?
@@ -183,6 +184,7 @@ function App() {
             {/* Composants utilitaires */}
             <Trash />
             <ContactLink />
+            <PaypalButton />
 
             {/* Aide conditionnelle */}
             {showHelp && <HelpOverlay onClose={toggleHelp} />}
