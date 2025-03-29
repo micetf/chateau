@@ -118,24 +118,80 @@ export function Chateau({ ordre, height, onLoad }) {
             svgElement.style.height = `${height}px`;
             svgElement.style.width = "auto";
 
-            // Calculer la largeur et notifier le parent
-            setTimeout(() => {
+            // Utiliser un MutationObserver pour détecter les changements dans le SVG
+            const observer = new MutationObserver(() => {
                 const width = svgElement.getBoundingClientRect().width;
-                if (width > 0) {
+                if (width > 0 && !isLoaded) {
                     console.log("SVG chargé, largeur:", width);
                     onLoad(width);
                     setIsLoaded(true);
-                } else {
-                    // Fallback si la largeur est 0
-                    console.warn(
-                        "Largeur du SVG est 0, utilisation de la valeur par défaut"
-                    );
-                    onLoad(867); // Valeur par défaut basée sur la largeur naturelle du SVG
+                    observer.disconnect();
+                }
+            });
+
+            // Observer les changements d'attributs et les modifications DOM
+            observer.observe(svgElement, {
+                attributes: true,
+                childList: true,
+                subtree: true,
+                attributeFilter: ["width", "height"],
+            });
+
+            // Même si le SVG est déjà chargé, vérifier la largeur immédiatement
+            setTimeout(() => {
+                const width = svgElement.getBoundingClientRect().width;
+                if (width > 0 && !isLoaded) {
+                    console.log("SVG chargé immédiatement, largeur:", width);
+                    onLoad(width);
                     setIsLoaded(true);
+                    observer.disconnect();
+                } else if (!isLoaded) {
+                    // Dernière tentative après un délai plus long
+                    setTimeout(() => {
+                        const finalWidth =
+                            svgElement.getBoundingClientRect().width;
+                        if (finalWidth > 0) {
+                            console.log(
+                                "SVG chargé après délai, largeur:",
+                                finalWidth
+                            );
+                            onLoad(finalWidth);
+                        } else {
+                            // Fallback avec une valeur par défaut basée sur le viewBox
+                            const viewBox = svgElement.getAttribute("viewBox");
+                            let defaultWidth = 867; // Valeur par défaut si tout échoue
+
+                            if (viewBox) {
+                                const [, , vbWidth] = viewBox
+                                    .split(" ")
+                                    .map(Number);
+                                if (!isNaN(vbWidth) && vbWidth > 0) {
+                                    defaultWidth = vbWidth * 10; // Multiplier par un facteur raisonnable
+                                }
+                            }
+
+                            console.warn(
+                                "Impossible de déterminer la largeur du SVG, utilisation de la valeur par défaut:",
+                                defaultWidth
+                            );
+                            onLoad(defaultWidth);
+                        }
+                        setIsLoaded(true);
+                        observer.disconnect();
+                    }, 500);
                 }
             }, 50);
         }
-    }, [svgContent, height, onLoad]);
+
+        // Nettoyer l'observer lors du démontage
+        return () => {
+            const svgElement = containerRef.current?.querySelector("svg");
+            if (svgElement) {
+                const observer = new MutationObserver(() => {});
+                observer.disconnect();
+            }
+        };
+    }, [svgContent, height, onLoad, isLoaded]);
 
     return (
         <div className="flex justify-center w-full">
