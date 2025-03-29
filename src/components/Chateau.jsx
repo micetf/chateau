@@ -131,14 +131,18 @@ export function Chateau({ ordre, height, onLoad }) {
             // Ajouter au DOM après avoir configuré
             containerRef.current.appendChild(svgElement);
 
-            // Utiliser ResizeObserver pour détecter les changements de taille
+            // Créer un observateur de redimensionnement
             const resizeObserver = new ResizeObserver((entries) => {
                 for (const entry of entries) {
                     const { width } = entry.contentRect;
                     if (width > 0 && !isLoaded) {
-                        onLoad(width);
-                        setIsLoaded(true);
-                        resizeObserver.disconnect();
+                        // Trouver et mesurer les dimensions des cellules
+                        setTimeout(() => {
+                            const cellData = measureCellDimensions(svgElement);
+                            onLoad(width, cellData);
+                            setIsLoaded(true);
+                            resizeObserver.disconnect();
+                        }, 50); // Court délai pour s'assurer que le SVG est rendu
                     }
                 }
             });
@@ -149,7 +153,8 @@ export function Chateau({ ordre, height, onLoad }) {
             setTimeout(() => {
                 const { width } = svgElement.getBoundingClientRect();
                 if (width > 0 && !isLoaded) {
-                    onLoad(width);
+                    const cellData = measureCellDimensions(svgElement);
+                    onLoad(width, cellData);
                     setIsLoaded(true);
                     resizeObserver.disconnect();
                 }
@@ -160,6 +165,85 @@ export function Chateau({ ordre, height, onLoad }) {
             };
         }
     }, [svgContent, height, onLoad, isLoaded]);
+
+    // Fonction pour mesurer les dimensions des cellules du château
+    const measureCellDimensions = (svgElement) => {
+        try {
+            // Récupérer tous les éléments texte représentant des nombres
+            const textElements = Array.from(
+                svgElement.querySelectorAll("text")
+            ).filter(
+                (text) =>
+                    text.querySelector("tspan") &&
+                    /^\d{1,2}$/.test(
+                        text.querySelector("tspan").textContent.trim()
+                    )
+            );
+
+            if (textElements.length === 0) {
+                console.warn("Aucune cellule trouvée dans le SVG");
+                return { cellWidth: 30, cellHeight: 30, averageSize: 30 };
+            }
+
+            // Mesurer l'espacement horizontal et vertical entre les cellules
+            let minXDistance = Infinity;
+            let minYDistance = Infinity;
+
+            // Calculer la distance minimale horizontale et verticale
+            for (let i = 0; i < textElements.length; i++) {
+                const rectI = textElements[i].getBoundingClientRect();
+                for (let j = i + 1; j < textElements.length; j++) {
+                    const rectJ = textElements[j].getBoundingClientRect();
+
+                    // Calculer la distance horizontale si les éléments sont sur la même ligne
+                    if (Math.abs(rectI.top - rectJ.top) < 5) {
+                        const xDist = Math.abs(rectI.left - rectJ.left);
+                        if (xDist > 5 && xDist < minXDistance) {
+                            // Ignorer les distances trop petites
+                            minXDistance = xDist;
+                        }
+                    }
+
+                    // Calculer la distance verticale si les éléments sont dans la même colonne
+                    if (Math.abs(rectI.left - rectJ.left) < 5) {
+                        const yDist = Math.abs(rectI.top - rectJ.top);
+                        if (yDist > 5 && yDist < minYDistance) {
+                            // Ignorer les distances trop petites
+                            minYDistance = yDist;
+                        }
+                    }
+                }
+            }
+
+            // Calculer la taille moyenne des cellules (largeur des nombres + espacement)
+            const avgWidth =
+                textElements.reduce(
+                    (acc, el) => acc + el.getBoundingClientRect().width,
+                    0
+                ) / textElements.length;
+
+            // Estimer la taille de cellule appropriée
+            const cellWidth =
+                minXDistance !== Infinity ? minXDistance : avgWidth * 1.5;
+            const cellHeight =
+                minYDistance !== Infinity ? minYDistance : avgWidth * 1.5;
+
+            // Calculer la taille moyenne à utiliser comme référence
+            const averageSize = Math.ceil((cellWidth + cellHeight) / 2);
+
+            return {
+                cellWidth: Math.ceil(cellWidth),
+                cellHeight: Math.ceil(cellHeight),
+                averageSize: averageSize,
+                // Inclure le nombre de lignes et colonnes si possible
+                rows: 10,
+                columns: 10,
+            };
+        } catch (error) {
+            console.error("Erreur lors de la mesure des cellules:", error);
+            return { cellWidth: 30, cellHeight: 30, averageSize: 30 };
+        }
+    };
 
     return (
         <div className="flex justify-center w-full">

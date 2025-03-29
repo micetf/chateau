@@ -22,6 +22,7 @@ function App() {
         height: 0,
     });
     const [cellSize, setCellSize] = useState(0);
+    const [cellDimensions, setCellDimensions] = useState(null);
     const [ordre, setOrdre] = useState("99-0");
     const [showHelp, setShowHelp] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -96,7 +97,7 @@ function App() {
 
     // Gérer le chargement de l'image du château avec un callback mémorisé
     const handleChateauLoad = useCallback(
-        (width) => {
+        (width, cellData) => {
             if (!width || typeof width !== "number" || width <= 0) {
                 console.warn(
                     "Largeur invalide reçue:",
@@ -104,6 +105,12 @@ function App() {
                     "- utilisation d'une valeur par défaut"
                 );
                 width = 867; // Valeur par défaut si la largeur est invalide
+            }
+
+            // Stocker les dimensions des cellules pour les utiliser plus tard
+            if (cellData) {
+                setCellDimensions(cellData);
+                console.log("Dimensions des cellules détectées:", cellData);
             }
 
             // Calculer les dimensions du château en tenant compte de l'orientation
@@ -144,16 +151,37 @@ function App() {
                 height: height,
             });
 
-            // Calculer la taille d'une cellule en fonction de la taille du château
-            // Garantir une taille minimum lisible et maximum pour l'accessibilité
-            const newCellSize = Math.min(
-                Math.max(
-                    24, // Taille minimum
-                    Math.round((adjustedWidth / width) * 50)
-                ),
-                isMobile ? 40 : 60 // Taille maximum selon le device
-            );
+            // Calculer la taille d'une cellule en fonction des dimensions réelles détectées
+            let newCellSize;
+
+            if (cellData && cellData.averageSize) {
+                // Calculer le facteur d'échelle entre le SVG original et la taille affichée
+                const scaleFactor = adjustedWidth / width;
+
+                // Appliquer le facteur d'échelle aux dimensions des cellules
+                newCellSize = Math.ceil(cellData.averageSize * scaleFactor);
+
+                // Assurer que la taille reste dans des limites raisonnables
+                newCellSize = Math.min(
+                    Math.max(
+                        24, // Taille minimum
+                        newCellSize
+                    ),
+                    isMobile ? 40 : 60 // Taille maximum selon le device
+                );
+            } else {
+                // Fallback au calcul précédent si les dimensions des cellules ne sont pas disponibles
+                newCellSize = Math.min(
+                    Math.max(
+                        24, // Taille minimum
+                        Math.round((adjustedWidth / width) * 50)
+                    ),
+                    isMobile ? 40 : 60 // Taille maximum selon le device
+                );
+            }
+
             setCellSize(newCellSize);
+            console.log("Nouvelle taille de cellule calculée:", newCellSize);
 
             // Recalcul des positions après un court délai
             setTimeout(() => {
@@ -184,8 +212,12 @@ function App() {
             const leftColumnRect =
                 leftColumnRef.current.getBoundingClientRect();
 
-            // Largeur totale occupée par tous les caches côte à côte
-            const totalCachesWidth = cellSize * cacheColors.length;
+            // Espacement adaptatif entre les caches
+            const spacing = Math.max(5, Math.round(cellSize * 0.1));
+
+            // Largeur totale occupée par tous les caches côte à côte avec espacement
+            const totalCachesWidth =
+                (cellSize + spacing) * cacheColors.length - spacing;
 
             // Position de départ pour centrer horizontalement l'ensemble des caches
             const startX =
@@ -199,7 +231,7 @@ function App() {
             // Calculer la position de chaque cache
             const positions = cacheColors.map((_, index) => {
                 return {
-                    x: startX + index * cellSize, // Positionnement horizontal
+                    x: startX + index * (cellSize + spacing), // Positionnement horizontal avec espacement
                     y: centerY,
                 };
             });
@@ -210,8 +242,12 @@ function App() {
             const leftColumnRect =
                 leftColumnRef.current.getBoundingClientRect();
 
-            // Hauteur totale occupée par tous les caches
-            const totalCachesHeight = cellSize * cacheColors.length;
+            // Espacement adaptatif entre les caches
+            const spacing = Math.max(5, Math.round(cellSize * 0.1));
+
+            // Hauteur totale occupée par tous les caches avec espacement
+            const totalCachesHeight =
+                (cellSize + spacing) * cacheColors.length - spacing;
 
             // Position de départ pour centrer verticalement
             const startY =
@@ -226,7 +262,7 @@ function App() {
             const positions = cacheColors.map((_, index) => {
                 return {
                     x: centerX,
-                    y: startY + index * cellSize, // Positionnement vertical
+                    y: startY + index * (cellSize + spacing), // Positionnement vertical avec espacement
                 };
             });
 
@@ -237,13 +273,29 @@ function App() {
         const rightColumnRect = rightColumnRef.current.getBoundingClientRect();
         const masqueSize = cellSize * 3;
 
+        // S'assurer que le masque ne dépasse pas les limites de la colonne
+        const adjustedMasqueSize = Math.min(
+            masqueSize,
+            rightColumnRect.width * 0.9,
+            rightColumnRect.height * 0.8
+        );
+
+        // Recalculer la taille d'une cellule du masque si nécessaire
+        const adjustedCellSize = adjustedMasqueSize / 3;
+
         // Calculer le centre de la colonne droite
         const masqueCenterX =
-            rightColumnRect.left + (rightColumnRect.width - masqueSize) / 2;
+            rightColumnRect.left +
+            (rightColumnRect.width - adjustedMasqueSize) / 2;
         const masqueCenterY =
-            rightColumnRect.top + (rightColumnRect.height - masqueSize) / 2;
+            rightColumnRect.top +
+            (rightColumnRect.height - adjustedMasqueSize) / 2;
 
-        const newMasquePosition = { x: masqueCenterX, y: masqueCenterY };
+        const newMasquePosition = {
+            x: masqueCenterX,
+            y: masqueCenterY,
+            cellSize: adjustedCellSize, // Stocker la taille ajustée pour le masque
+        };
 
         setMasquePosition(newMasquePosition);
     }, [
@@ -376,10 +428,12 @@ function App() {
                                 zIndex: 50,
                             }}
                         >
-                            {/* Le masque - positionné au centre */}
+                            {/* Le masque - positionné au centre avec taille ajustée */}
                             {cellSize > 0 && masquePosition.x > 0 && (
                                 <DraggableMasque
-                                    cellSize={cellSize}
+                                    cellSize={
+                                        masquePosition.cellSize || cellSize
+                                    }
                                     initialX={masquePosition.x}
                                     initialY={masquePosition.y}
                                     isSource={true}
@@ -461,10 +515,12 @@ function App() {
                                 zIndex: 50,
                             }}
                         >
-                            {/* Le masque - positionné au centre */}
+                            {/* Le masque - positionné au centre avec taille ajustée */}
                             {cellSize > 0 && masquePosition.x > 0 && (
                                 <DraggableMasque
-                                    cellSize={cellSize}
+                                    cellSize={
+                                        masquePosition.cellSize || cellSize
+                                    }
                                     initialX={masquePosition.x}
                                     initialY={masquePosition.y}
                                     isSource={true}

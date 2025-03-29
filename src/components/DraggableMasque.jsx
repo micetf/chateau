@@ -9,7 +9,10 @@ function DraggableMasque({
     ordre = "99-0",
     isSidebarItem = false,
 }) {
-    const masqueSize = cellSize * 3;
+    // Garantir que la taille du cellSize est raisonnable pour éviter un masque trop grand
+    const adjustedCellSize = Math.min(cellSize, 50);
+    const masqueSize = adjustedCellSize * 3;
+
     const [position, setPosition] = useState({ x: initialX, y: initialY });
     const [isDragging, setIsDragging] = useState(false);
     const [clones, setClones] = useState([]);
@@ -50,6 +53,13 @@ function DraggableMasque({
             setPosition({ x: absolutePosition.x, y: absolutePosition.y });
         }
     }, [absolutePosition, isSource, isDragging]);
+
+    // Mettre à jour la position si les coordonnées initiales changent
+    useEffect(() => {
+        if (!isSource && !isDragging) {
+            setPosition({ x: initialX, y: initialY });
+        }
+    }, [initialX, initialY, isSource, isDragging]);
 
     useEffect(() => {
         const handleMouseMove = (e) => {
@@ -185,7 +195,7 @@ function DraggableMasque({
         ? clones.map((clone) => (
               <DraggableMasque
                   key={clone.id}
-                  cellSize={cellSize}
+                  cellSize={adjustedCellSize}
                   initialX={clone.x}
                   initialY={clone.y}
                   isSource={false}
@@ -231,7 +241,7 @@ function DraggableMasque({
             >
                 <MasqueSvg
                     ordre={ordre}
-                    size={cellSize}
+                    size={adjustedCellSize}
                     baseColor="#FFFF99"
                     accentColor="#FFEE66"
                 />
