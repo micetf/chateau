@@ -49,9 +49,18 @@ export function PaypalButton() {
             // Utiliser l'élément existant pour activer notre formulaire
             originalPaypalBtn.addEventListener("click", (e) => {
                 e.preventDefault();
-                const submitBtn = document.getElementById("paypal-submit-btn");
-                if (submitBtn) {
-                    submitBtn.click();
+                document.getElementById("paypal-form").submit();
+            });
+        }
+
+        // Configuration du lien de contact dans le menu mobile
+        const contactMobileElement = document.getElementById("contact-mobile");
+        if (contactMobileElement) {
+            contactMobileElement.addEventListener("click", (e) => {
+                e.preventDefault();
+                const contactElement = document.getElementById("contact");
+                if (contactElement) {
+                    contactElement.click();
                 }
             });
         }
@@ -63,9 +72,13 @@ export function PaypalButton() {
                 document.body.removeChild(form);
             }
 
-            // Nettoyer l'écouteur d'événements sur le bouton original si nécessaire
+            // Nettoyer les écouteurs d'événements
             if (originalPaypalBtn) {
                 originalPaypalBtn.removeEventListener("click", () => {});
+            }
+
+            if (contactMobileElement) {
+                contactMobileElement.removeEventListener("click", () => {});
             }
         };
     }, []);

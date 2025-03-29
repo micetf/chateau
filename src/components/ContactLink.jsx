@@ -1,4 +1,3 @@
-export default ContactLink;
 import { useEffect } from "react";
 
 export function ContactLink() {
@@ -19,7 +18,7 @@ export function ContactLink() {
         contactLink.id = "js-micetf-contact";
         document.querySelector("body").appendChild(contactLink);
 
-        // Configuration du lien de contact visible
+        // Configuration du lien de contact visible dans la navbar
         const contactElement = document.querySelector("#contact");
         if (contactElement) {
             contactElement.title = "Pour contacter le webmaster...";
@@ -28,6 +27,12 @@ export function ContactLink() {
                 console.log("mail : " + contactLink.href);
                 contactLink.click();
             });
+        }
+
+        // Configuration du lien de contact dans le menu mobile
+        const contactMobileElement = document.querySelector("#contact-mobile");
+        if (contactMobileElement) {
+            contactMobileElement.title = "Pour contacter le webmaster...";
         }
 
         // Nettoyage à la désinstallation du composant
@@ -46,3 +51,5 @@ export function ContactLink() {
     // Ce composant n'affiche rien directement, il gère juste le comportement du lien contact
     return null;
 }
+
+export default ContactLink;
