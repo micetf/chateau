@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import MasqueSvg from "./MasqueSvg";
 
 function DraggableMasque({
     cellSize,
@@ -69,6 +70,14 @@ function DraggableMasque({
                 if (!isSource) {
                     // Si ce n'est pas une source, on le supprime
                     setIsVisible(false);
+
+                    // Animation de suppression
+                    if (masqueRef.current) {
+                        masqueRef.current.classList.add("deleting");
+                        setTimeout(() => {
+                            setIsVisible(false);
+                        }, 300);
+                    }
                 }
             } else if (isDragging && isSource) {
                 // Si c'est une source et qu'on n'est pas sur la poubelle, créer un clone
@@ -188,10 +197,6 @@ function DraggableMasque({
     // Si l'élément a été supprimé, ne rien rendre
     if (!isVisible) return null;
 
-    // Adapter le texte selon l'ordre
-    const plusDix = ordre === "0-99" ? "+10" : "-10";
-    const moinsDix = ordre === "0-99" ? "-10" : "+10";
-
     return (
         <>
             <div
@@ -204,8 +209,6 @@ function DraggableMasque({
                     top: `${position.y}px`,
                     width: `${masqueSize}px`,
                     height: `${masqueSize}px`,
-                    backgroundColor: "#FFFF99",
-                    border: "2px solid black",
                     boxShadow: isDragging
                         ? "0 8px 16px rgba(0,0,0,0.5)"
                         : "0 4px 8px rgba(0,0,0,0.3)",
@@ -219,9 +222,6 @@ function DraggableMasque({
                     transformOrigin: "center",
                     pointerEvents: "auto", // S'assurer que l'élément capture les événements souris
                     userSelect: "none",
-                    display: "grid",
-                    gridTemplateColumns: "repeat(3, 1fr)",
-                    gridTemplateRows: "repeat(3, 1fr)",
                 }}
                 title={
                     isSource
@@ -229,25 +229,12 @@ function DraggableMasque({
                         : "Glisser ou déposer dans la poubelle pour supprimer"
                 }
             >
-                <div className="border border-black"></div>
-                <div className="border border-black flex items-center justify-center font-bold">
-                    {plusDix}
-                </div>
-                <div className="border border-black"></div>
-
-                <div className="border border-black flex items-center justify-center font-bold">
-                    -1
-                </div>
-                <div className="border border-black bg-yellow-300"></div>
-                <div className="border border-black flex items-center justify-center font-bold">
-                    +1
-                </div>
-
-                <div className="border border-black"></div>
-                <div className="border border-black flex items-center justify-center font-bold">
-                    {moinsDix}
-                </div>
-                <div className="border border-black"></div>
+                <MasqueSvg
+                    ordre={ordre}
+                    size={cellSize}
+                    baseColor="#FFFF99"
+                    accentColor="#FFEE66"
+                />
             </div>
             {cloneElements}
         </>
