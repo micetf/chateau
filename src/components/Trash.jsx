@@ -18,6 +18,7 @@ const Trash = () => {
             poubelleElement.style.bottom = "20px";
             poubelleElement.style.zIndex = "100";
             poubelleElement.title = "Déposez ici les éléments à supprimer";
+            poubelleElement.alt = "Poubelle";
 
             // Ajouter une classe pour faciliter la sélection
             poubelleElement.className = "trash-element";
@@ -51,6 +52,18 @@ const Trash = () => {
                 poubelleElement.classList.remove("active");
                 dropZone.classList.remove("highlight");
             });
+
+            // Animation pour montrer la poubelle au démarrage
+            poubelleElement.style.opacity = "0";
+            poubelleElement.style.transform = "translateY(20px)";
+            poubelleElement.style.transition =
+                "opacity 0.5s ease, transform 0.5s ease";
+
+            // Déclencher l'animation après un court délai
+            setTimeout(() => {
+                poubelleElement.style.opacity = "1";
+                poubelleElement.style.transform = "translateY(0)";
+            }, 300);
         }
 
         // Nettoyer lors du démontage du composant
@@ -58,6 +71,12 @@ const Trash = () => {
             const dropZone = document.getElementById("trash-drop-zone");
             if (dropZone) {
                 document.body.removeChild(dropZone);
+            }
+
+            const poubelleElement = document.getElementById("poubelle");
+            if (poubelleElement) {
+                poubelleElement.removeEventListener("mouseenter", () => {});
+                poubelleElement.removeEventListener("mouseleave", () => {});
             }
         };
     }, []);

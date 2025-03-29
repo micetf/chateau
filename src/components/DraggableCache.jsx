@@ -1,6 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 
-function DraggableCache({ color, size, initialX, initialY, isSource = false }) {
+function DraggableCache({
+    color,
+    size,
+    initialX,
+    initialY,
+    isSource = false,
+    isSidebarItem = false,
+}) {
     const [position, setPosition] = useState({ x: initialX, y: initialY });
     const [isDragging, setIsDragging] = useState(false);
     const [clones, setClones] = useState([]);
@@ -8,6 +15,13 @@ function DraggableCache({ color, size, initialX, initialY, isSource = false }) {
     const cacheRef = useRef(null);
     const offset = useRef({ x: 0, y: 0 });
     const nextIdRef = useRef(0);
+
+    // Mettre à jour la position si les coordonnées initiales changent
+    useEffect(() => {
+        if (isSource) {
+            setPosition({ x: initialX, y: initialY });
+        }
+    }, [initialX, initialY, isSource]);
 
     useEffect(() => {
         const handleMouseMove = (e) => {
@@ -32,12 +46,15 @@ function DraggableCache({ color, size, initialX, initialY, isSource = false }) {
             } else if (isDragging && isSource) {
                 // Si c'est une source et qu'on n'est pas sur la poubelle, créer un clone
                 const newId = nextIdRef.current++;
+                const newX = e.clientX - offset.current.x;
+                const newY = e.clientY - offset.current.y;
+
                 setClones([
                     ...clones,
                     {
                         id: newId,
-                        x: position.x,
-                        y: position.y,
+                        x: newX,
+                        y: newY,
                         color: color,
                     },
                 ]);
@@ -58,11 +75,13 @@ function DraggableCache({ color, size, initialX, initialY, isSource = false }) {
 
             const trashRect = trashElement.getBoundingClientRect();
 
+            // Zone de détection élargie pour faciliter le drop
+            const buffer = 30;
             return (
-                x >= trashRect.left - 30 &&
-                x <= trashRect.right + 30 &&
-                y >= trashRect.top - 30 &&
-                y <= trashRect.bottom + 30
+                x >= trashRect.left - buffer &&
+                x <= trashRect.right + buffer &&
+                y >= trashRect.top - buffer &&
+                y <= trashRect.bottom + buffer
             );
         };
 
@@ -79,6 +98,8 @@ function DraggableCache({ color, size, initialX, initialY, isSource = false }) {
 
     const handleMouseDown = (e) => {
         if (!cacheRef.current) return;
+
+        e.preventDefault(); // Empêcher la sélection de texte
 
         // Calculer le décalage entre la position du clic et le coin de l'élément
         const rect = cacheRef.current.getBoundingClientRect();
@@ -112,6 +133,24 @@ function DraggableCache({ color, size, initialX, initialY, isSource = false }) {
     // Si l'élément a été supprimé, ne rien rendre
     if (!isVisible) return null;
 
+    // Style pour centrer l'élément dans la barre latérale si nécessaire
+    let styleModifier = {};
+
+    if (isSidebarItem) {
+        styleModifier = {
+            left: "50%",
+            transform: isDragging
+                ? "translate(-50%, 0) scale(1.05)"
+                : "translate(-50%, 0)",
+            transformOrigin: "center",
+        };
+    } else {
+        styleModifier = {
+            transform: isDragging ? "scale(1.05)" : "scale(1)",
+            transformOrigin: "center",
+        };
+    }
+
     return (
         <>
             <div
@@ -131,13 +170,18 @@ function DraggableCache({ color, size, initialX, initialY, isSource = false }) {
                         : "0 4px 8px rgba(0,0,0,0.3)",
                     cursor: isDragging ? "grabbing" : "grab",
                     touchAction: "none",
-                    zIndex: isDragging ? 150 : 100,
-                    transform: isDragging ? "scale(1.05)" : "scale(1)",
+                    zIndex: isDragging ? 150 : isSource ? 50 : 100,
+                    ...styleModifier,
                     transition: isDragging
                         ? "none"
                         : "box-shadow 0.2s, transform 0.2s",
                     userSelect: "none",
                 }}
+                title={
+                    isSource
+                        ? "Glisser pour créer un cache"
+                        : "Glisser ou déposer dans la poubelle pour supprimer"
+                }
             />
             {cloneElements}
         </>

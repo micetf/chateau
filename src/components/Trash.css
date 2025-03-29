@@ -1,14 +1,16 @@
 /* Animation et styles pour la poubelle */
 .trash-element {
-    transition: transform 0.2s ease-in-out, filter 0.3s ease;
+    transition: transform 0.3s ease-in-out, filter 0.3s ease;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    animation: pulse 2s infinite alternate;
 }
 
 .trash-element:hover,
 .trash-element.active {
     transform: scale(1.2);
     filter: brightness(1.2);
+    animation: none;
 }
 
 /* Animation pour l'effet de suppression */
@@ -27,13 +29,24 @@
     }
 }
 
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    100% {
+        transform: scale(1.05);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+    }
+}
+
 .deleting {
     animation: trashAnimation 0.3s forwards;
 }
 
 /* Zone de drop pour la poubelle */
 #trash-drop-zone {
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, border 0.3s ease;
 }
 
 #trash-drop-zone.highlight {
