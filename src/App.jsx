@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import Chateau from "./components/Chateau";
 import Header from "./components/Header";
-import DraggableCache from "./components/DraggableCache";
-import DraggableMasque from "./components/DraggableMasque";
 import ContactLink from "./components/ContactLink";
 import PaypalButton from "./components/PaypalButton";
+import DraggableCache from "./components/DraggableCache";
+import DraggableMasque from "./components/DraggableMasque";
 
 function App() {
     const [ordre, setOrdre] = useState("99-0");
@@ -17,65 +17,9 @@ function App() {
     const [chateauWidth, setChateauWidth] = useState(0);
     const [cellSize, setCellSize] = useState(0);
 
-    // Vérification de la compatibilité canvas
-    useEffect(() => {
-        console.log("Vérification de la compatibilité canvas");
-        try {
-            const canvas = document.createElement("canvas");
-            canvas.width = 10;
-            canvas.height = 10;
-
-            const ctx = canvas.getContext("2d");
-            if (!ctx) {
-                console.error("Le contexte 2D n'est pas pris en charge");
-                return;
-            }
-
-            ctx.fillStyle = "red";
-            ctx.fillRect(0, 0, 10, 10);
-
-            const dataUrl = canvas.toDataURL();
-            console.log(
-                "Test canvas réussi:",
-                dataUrl.substring(0, 30) + "..."
-            );
-
-            // Tester spécifiquement la création d'un cache
-            const testCellSize = 20;
-            const testColor = "#FF0000";
-            console.log(
-                `Test de création d'un cache: taille=${testCellSize}, couleur=${testColor}`
-            );
-
-            const testCanvas = document.createElement("canvas");
-            testCanvas.width = testCellSize;
-            testCanvas.height = testCellSize;
-
-            const testCtx = testCanvas.getContext("2d");
-            testCtx.fillStyle = testColor;
-            testCtx.fillRect(0, 0, testCellSize, testCellSize);
-            testCtx.strokeStyle = "black";
-            testCtx.lineWidth = 2;
-            testCtx.strokeRect(0, 0, testCellSize, testCellSize);
-
-            const testCacheUrl = testCanvas.toDataURL("image/png");
-            console.log(
-                "Test de création de cache réussi:",
-                testCacheUrl.substring(0, 30) + "..."
-            );
-        } catch (error) {
-            console.error("Erreur lors du test canvas:", error);
-        }
-    }, []);
-
     // Gestion du redimensionnement de la fenêtre
     useEffect(() => {
         const handleResize = () => {
-            console.log(
-                "Fenêtre redimensionnée:",
-                window.innerWidth,
-                window.innerHeight
-            );
             setWindowSize({
                 width: window.innerWidth,
                 height: window.innerHeight,
@@ -98,14 +42,11 @@ function App() {
 
     // Gérer le chargement de l'image du château
     const handleChateauLoad = (width) => {
-        console.log("Château chargé avec largeur:", width);
         // S'assurer que la largeur est un nombre valide
         if (width && typeof width === "number" && width > 0) {
             setChateauWidth(width);
             // Calculer la taille des cellules en fonction de la largeur du château
-            // Utilisons une référence fixe de 867px (largeur naturelle du SVG) au lieu de 1024
-            const newCellSize = Math.max(10, Math.round((width / 867) * 50));
-            console.log("Nouvelle taille de cellule:", newCellSize);
+            const newCellSize = Math.max(30, Math.round((width / 867) * 50));
             setCellSize(newCellSize);
         } else {
             console.error("Largeur de château invalide:", width);
@@ -117,36 +58,100 @@ function App() {
     // Les couleurs pour les caches
     const cacheColors = ["#FF9117", "#B33514", "#FF5700", "#0079B3", "#00FFEA"];
 
+    // Calculer les dimensions pour le centrage
+    const mainAreaWidth = windowSize.width;
+    const sideColumnWidth = Math.min(150, Math.max(100, mainAreaWidth * 0.15));
+    const centerAreaWidth = mainAreaWidth - sideColumnWidth * 2;
+
+    // Calculer les positions des caches
+    const cachePositions = cacheColors.map((_, index) => {
+        const y = 100 + index * (cellSize + 22); // Espacement vertical
+        return {
+            x: sideColumnWidth / 2, // Centré dans la colonne gauche
+            y: y,
+        };
+    });
+
+    // Calculer la position du masque
+    const masquePosition = {
+        x: mainAreaWidth - sideColumnWidth / 2 - cellSize * 1.5, // Centré dans la colonne droite
+        y: 100, // En haut avec un espacement
+    };
+
+    // Calculer la position de la poubelle
+    const trashPosition = {
+        x: sideColumnWidth / 2, // Centré dans la colonne gauche
+        y: sectionHeight - 80, // En bas avec un espacement
+    };
+
+    // Calculer la position du bouton d'inversion
+    const switchButtonPosition = {
+        x: mainAreaWidth - sideColumnWidth / 2, // Centré dans la colonne droite
+        y: sectionHeight - 80, // En bas avec un espacement
+    };
+
     return (
         <>
             <Header ref={headerRef} ordre={ordre} setOrdre={setOrdre} />
 
-            <section
-                className="relative flex flex-col items-center"
-                style={{ height: `${sectionHeight}px` }}
+            <div
+                className="relative"
+                style={{
+                    height: `${sectionHeight}px`,
+                    userSelect: "none", // Empêche la sélection de texte lors du glisser-déposer
+                }}
             >
-                <Chateau
-                    ordre={ordre}
-                    height={sectionHeight}
-                    onLoad={handleChateauLoad}
-                />
+                {/* Zone centrale pour le château */}
+                <div className="flex justify-center items-center h-full">
+                    <Chateau
+                        ordre={ordre}
+                        height={sectionHeight - 40}
+                        onLoad={handleChateauLoad}
+                    />
+                </div>
 
                 {cellSize > 0 && (
                     <>
+                        {/* Titre des caches */}
+                        <div
+                            className="absolute text-text-primary font-semibold"
+                            style={{
+                                left: `${sideColumnWidth / 2 - 20}px`,
+                                top: "20px",
+                                textAlign: "center",
+                            }}
+                        >
+                            Caches
+                        </div>
+
                         {/* Caches */}
                         {cacheColors.map((color, index) => (
-                            <></>
-                            // <DraggableCache
-                            //     key={`cache-${index}`}
-                            //     color={color}
-                            //     index={index}
-                            //     cellSize={cellSize}
-                            //     headerHeight={headerHeight}
-                            //     sectionHeight={sectionHeight}
-                            //     chateauWidth={chateauWidth}
-                            //     windowWidth={windowSize.width}
-                            // />
+                            <DraggableCache
+                                key={`cache-${index}`}
+                                color={color}
+                                index={index}
+                                cellSize={cellSize}
+                                headerHeight={headerHeight}
+                                sectionHeight={sectionHeight}
+                                chateauWidth={chateauWidth}
+                                windowWidth={windowSize.width}
+                                initialX={cachePositions[index].x}
+                                initialY={cachePositions[index].y}
+                                trashPosition={trashPosition}
+                            />
                         ))}
+
+                        {/* Titre du masque */}
+                        <div
+                            className="absolute text-text-primary font-semibold"
+                            style={{
+                                right: `${sideColumnWidth / 2 - 25}px`,
+                                top: "20px",
+                                textAlign: "center",
+                            }}
+                        >
+                            Masque
+                        </div>
 
                         {/* Masque */}
                         <DraggableMasque
@@ -156,29 +161,47 @@ function App() {
                             sectionHeight={sectionHeight}
                             chateauWidth={chateauWidth}
                             windowWidth={windowSize.width}
+                            initialX={masquePosition.x}
+                            initialY={masquePosition.y}
+                            trashPosition={trashPosition}
                         />
 
+                        {/* Poubelle */}
                         <div
-                            className="fixed bottom-2 left-2 flex items-center justify-center"
+                            className="absolute flex flex-col items-center"
                             style={{
-                                width: `${cellSize * 1.5}px`,
-                                height: `${cellSize * 1.5}px`,
-                                border: "2px dashed #ff5700",
-                                borderRadius: "8px",
-                                backgroundColor: "rgba(0, 0, 0, 0.1)",
+                                left: `${trashPosition.x - cellSize}px`,
+                                bottom: `20px`,
                             }}
                         >
                             <img
                                 id="poubelle"
                                 src="/img/poubelle.png"
                                 alt="Poubelle"
-                                width={cellSize}
-                                style={{ cursor: "pointer" }}
+                                width={cellSize * 1.5}
+                                className="mb-1"
                             />
+                            <div className="text-xs text-text-primary">
+                                Supprimer
+                            </div>
                         </div>
+
+                        {/* Bouton d'inversion */}
+                        <button
+                            className="absolute px-3 py-2 bg-header rounded text-text-primary text-xs font-bold hover:bg-opacity-80 transition-colors"
+                            style={{
+                                right: `${sideColumnWidth / 2 - 40}px`,
+                                bottom: `20px`,
+                            }}
+                            onClick={() =>
+                                setOrdre(ordre === "0-99" ? "99-0" : "0-99")
+                            }
+                        >
+                            {ordre === "0-99" ? "↓ 0 à 99 ↓" : "↑ 99 à 0 ↑"}
+                        </button>
                     </>
                 )}
-            </section>
+            </div>
 
             <ContactLink />
             <PaypalButton />
