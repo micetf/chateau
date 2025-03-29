@@ -103,7 +103,8 @@ function App() {
         if (width && typeof width === "number" && width > 0) {
             setChateauWidth(width);
             // Calculer la taille des cellules en fonction de la largeur du château
-            const newCellSize = Math.max(10, Math.round((width / 1024) * 50));
+            // Utilisons une référence fixe de 867px (largeur naturelle du SVG) au lieu de 1024
+            const newCellSize = Math.max(10, Math.round((width / 867) * 50));
             console.log("Nouvelle taille de cellule:", newCellSize);
             setCellSize(newCellSize);
         } else {
@@ -132,35 +133,19 @@ function App() {
 
                 {cellSize > 0 && (
                     <>
-                        {/* Repères visuels pour le débogage (à retirer en production) */}
-                        {process.env.NODE_ENV !== "production" && (
-                            <div className="absolute inset-0 pointer-events-none">
-                                <div
-                                    className="absolute border border-red-500 opacity-30"
-                                    style={{
-                                        left: `${
-                                            (windowSize.width - chateauWidth) /
-                                            2
-                                        }px`,
-                                        width: `${chateauWidth}px`,
-                                        height: "100%",
-                                    }}
-                                />
-                            </div>
-                        )}
-
                         {/* Caches */}
                         {cacheColors.map((color, index) => (
-                            <DraggableCache
-                                key={`cache-${index}`}
-                                color={color}
-                                index={index}
-                                cellSize={cellSize}
-                                headerHeight={headerHeight}
-                                sectionHeight={sectionHeight}
-                                chateauWidth={chateauWidth}
-                                windowWidth={windowSize.width}
-                            />
+                            <></>
+                            // <DraggableCache
+                            //     key={`cache-${index}`}
+                            //     color={color}
+                            //     index={index}
+                            //     cellSize={cellSize}
+                            //     headerHeight={headerHeight}
+                            //     sectionHeight={sectionHeight}
+                            //     chateauWidth={chateauWidth}
+                            //     windowWidth={windowSize.width}
+                            // />
                         ))}
 
                         {/* Masque */}
