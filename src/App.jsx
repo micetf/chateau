@@ -5,6 +5,7 @@ import ContactLink from "./components/ContactLink";
 import PaypalButton from "./components/PaypalButton";
 import DraggableCache from "./components/DraggableCache";
 import DraggableMasque from "./components/DraggableMasque";
+import Trash from "./components/Trash";
 
 function App() {
     const [windowSize, setWindowSize] = useState({
@@ -15,6 +16,7 @@ function App() {
     const [headerHeight, setHeaderHeight] = useState(0);
     const [chateauWidth, setChateauWidth] = useState(0);
     const [cellSize, setCellSize] = useState(0);
+    const [ordre, setOrdre] = useState("99-0"); // État pour l'ordre (99-0 par défaut)
 
     // Gestion du redimensionnement de la fenêtre
     useEffect(() => {
@@ -46,6 +48,11 @@ function App() {
         }
     };
 
+    // Toggle de l'ordre des nombres (0-99 ou 99-0)
+    const toggleOrdre = () => {
+        setOrdre((prev) => (prev === "0-99" ? "99-0" : "0-99"));
+    };
+
     const sectionHeight = windowSize.height - headerHeight;
     const cacheColors = ["#FF9117", "#B33514", "#FF5700", "#0079B3", "#00FFEA"];
     const sideColumnWidth = Math.min(
@@ -56,7 +63,7 @@ function App() {
     // Calculer la position initiale pour chaque cache
     const getCachePosition = (index) => {
         return {
-            x: sideColumnWidth / 2 - (cellSize ? cellSize / 2 : 0),
+            x: 10 + sideColumnWidth / 2 - (cellSize ? cellSize / 2 : 0),
             y: 100 + index * (cellSize ? cellSize + 20 : 60),
         };
     };
@@ -74,14 +81,16 @@ function App() {
 
     return (
         <>
-            <Header ref={headerRef} />
+            <Header ref={headerRef} toggleOrdre={toggleOrdre} ordre={ordre} />
 
             <div
-                className="relative"
+                className="relative mx-auto"
                 style={{
                     height: `${sectionHeight}px`,
+                    maxWidth: "1200px",
                     overflow: "hidden",
                     userSelect: "none",
+                    backgroundColor: "#536e7d",
                 }}
             >
                 {/* Disposition en trois colonnes */}
@@ -91,16 +100,21 @@ function App() {
                         style={{
                             width: `${sideColumnWidth}px`,
                             minWidth: "100px",
+                            backgroundColor: "rgba(26, 53, 64, 0.3)",
+                            borderRight: "2px dashed rgba(242, 220, 179, 0.5)",
                         }}
                     >
-                        <div className="h-10"></div>
-                        {/* Les caches sources sont placés directement dans App */}
+                        <div className="h-10 text-center">
+                            <h3 className="text-sm font-bold text-text-primary mt-4">
+                                Caches
+                            </h3>
+                        </div>
                     </div>
 
                     {/* Colonne centrale - Château */}
-                    <div className="flex-grow flex justify-center items-center">
+                    <div className="flex-grow flex justify-center items-center relative">
                         <Chateau
-                            ordre="99-0" // Valeur fixe maintenant
+                            ordre={ordre}
                             height={sectionHeight - 40}
                             onLoad={handleChateauLoad}
                         />
@@ -111,10 +125,15 @@ function App() {
                         style={{
                             width: `${sideColumnWidth}px`,
                             minWidth: "100px",
+                            backgroundColor: "rgba(26, 53, 64, 0.3)",
+                            borderLeft: "2px dashed rgba(242, 220, 179, 0.5)",
                         }}
                     >
-                        <div className="h-10"></div>
-                        {/* Le masque source est placé directement dans App */}
+                        <div className="h-10 text-center">
+                            <h3 className="text-sm font-bold text-text-primary mt-4">
+                                Masques
+                            </h3>
+                        </div>
                     </div>
                 </div>
 
@@ -139,6 +158,7 @@ function App() {
                             initialX={getMasquePosition().x}
                             initialY={getMasquePosition().y}
                             isSource={true}
+                            ordre={ordre}
                         />
                     </>
                 )}
@@ -146,6 +166,7 @@ function App() {
 
             <ContactLink />
             <PaypalButton />
+            <Trash />
         </>
     );
 }

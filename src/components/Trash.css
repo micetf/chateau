@@ -1,0 +1,57 @@
+/* Animation et styles pour la poubelle */
+.trash-element {
+    transition: transform 0.2s ease-in-out, filter 0.3s ease;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.trash-element:hover,
+.trash-element.active {
+    transform: scale(1.2);
+    filter: brightness(1.2);
+}
+
+/* Animation pour l'effet de suppression */
+@keyframes trashAnimation {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(0.8) rotate(10deg);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(0) rotate(20deg);
+        opacity: 0;
+    }
+}
+
+.deleting {
+    animation: trashAnimation 0.3s forwards;
+}
+
+/* Zone de drop pour la poubelle */
+#trash-drop-zone {
+    transition: background-color 0.3s ease;
+}
+
+#trash-drop-zone.highlight {
+    background-color: rgba(255, 0, 0, 0.2);
+    border: 2px dashed rgba(255, 255, 255, 0.5);
+}
+
+/* Styles spécifiques pour les éléments draggables */
+.draggable-cache,
+.draggable-masque {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    cursor: grab;
+}
+
+.draggable-cache:active,
+.draggable-masque:active {
+    cursor: grabbing;
+}
