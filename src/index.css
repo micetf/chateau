@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-background text-text-primary text-center m-0 p-0;
+    }
+
+    header {
+        @apply m-0 bg-header text-text-secondary text-left w-full py-2.5;
+    }
+
+    header h1 {
+        @apply m-0 pl-[2.5%] text-lg float-left;
+    }
+
+    header p {
+        @apply m-0 pr-[2.5%] text-right;
+    }
+
+    header a {
+        @apply no-underline text-text-primary font-bold;
+    }
+
+    header a:hover {
+        text-decoration: underline overline;
+    }
+
+    section {
+        @apply text-center m-0 flex justify-center items-center;
+    }
+}
+
+/* Styles spécifiques */
+#paypal {
+    @apply fixed bottom-0 right-0;
+}
+
+#poubelle {
+    @apply fixed bottom-0 left-0;
+}
+
+/* Style pour les images déplaçables */
+.draggable-item {
+    @apply absolute cursor-pointer;
+}
