@@ -43,9 +43,35 @@ const OptimizedImage = memo(function OptimizedImage({
                 if (src.startsWith("/")) {
                     setImageSrc(src);
                 } else {
-                    // Pour les imports dynamiques (recommandé)
-                    const image = await import(`../../assets/${src}`);
-                    setImageSrc(image.default);
+                    // Pour les imports depuis assets, utiliser un format que Vite peut analyser
+                    // Limitez les extensions possibles à celles que vous utilisez
+                    if (src.endsWith(".png")) {
+                        const image = await import(
+                            `../../assets/${src.replace(/\.png$/, "")}.png`
+                        );
+                        setImageSrc(image.default);
+                    } else if (src.endsWith(".jpg") || src.endsWith(".jpeg")) {
+                        const image = await import(
+                            `../../assets/${src.replace(
+                                /\.(jpg|jpeg)$/,
+                                ""
+                            )}.jpg`
+                        );
+                        setImageSrc(image.default);
+                    } else if (src.endsWith(".svg")) {
+                        const image = await import(
+                            `../../assets/${src.replace(/\.svg$/, "")}.svg`
+                        );
+                        setImageSrc(image.default);
+                    } else if (src.endsWith(".webp")) {
+                        const image = await import(
+                            `../../assets/${src.replace(/\.webp$/, "")}.webp`
+                        );
+                        setImageSrc(image.default);
+                    } else {
+                        // Fallback pour tout autre type
+                        setImageSrc(src);
+                    }
                 }
             } catch (err) {
                 console.error(`Erreur de chargement d'image: ${src}`, err);

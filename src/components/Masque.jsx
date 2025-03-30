@@ -7,7 +7,7 @@ const Masque = memo(function Masque({ ordre = "99-0", size = 50 }) {
     const totalSize = size * 3;
 
     // Choisir la bonne image en fonction de l'ordre
-    const imageName = ordre === "0-99" ? "masque.webp" : "masque-inverse.webp";
+    const imageName = ordre === "0-99" ? "masque-inverse.webp" : "masque.webp";
 
     return (
         <OptimizedImage

@@ -1,3 +1,4 @@
+// src/components/HelpOverlay.jsx
 import React, { useEffect, useRef } from "react";
 import { useChateauContext } from "../contexts/ChateauContext";
 
@@ -47,11 +48,24 @@ const HelpOverlay = () => {
                 className="bg-background p-4 sm:p-6 rounded-lg max-w-2xl w-full shadow-lg border border-text-secondary border-opacity-50 max-h-[90vh] overflow-auto"
                 tabIndex="-1"
             >
-                <div className="flex justify-between items-center mb-4 sm:mb-6 sticky top-0 bg-background pt-1 pb-2">
+                {/* En-tête avec titre et bouton de fermeture */}
+                <div className="flex justify-between items-center mb-4 sm:mb-6 sticky top-0 bg-background pt-1 pb-2 z-10 border-b border-text-secondary/30">
                     <h2
                         id="help-title"
-                        className="text-lg sm:text-xl font-bold text-text-primary"
+                        className="text-lg sm:text-xl font-bold text-text-primary flex items-center"
                     >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            className="w-5 h-5 mr-2 text-text-secondary"
+                        >
+                            <path
+                                fillRule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM8.94 6.94a.75.75 0 11-1.061-1.061 3 3 0 112.871 5.026v.345a.75.75 0 01-1.5 0v-.5c0-.72.57-1.172 1.081-1.287A1.5 1.5 0 108.94 6.94zM10 15a1 1 0 100-2 1 1 0 000 2z"
+                                clipRule="evenodd"
+                            />
+                        </svg>
                         Comment utiliser le Château des Nombres
                     </h2>
                     <button
@@ -63,13 +77,16 @@ const HelpOverlay = () => {
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
-                    <div className="mb-3 sm:mb-4">
-                        <h3 className="text-base sm:text-lg font-semibold text-text-secondary mb-1 sm:mb-2 flex items-center">
-                            <span className="mr-2 text-text-primary">1.</span>
+                {/* Contenu de l'aide réorganisé avec Tailwind */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 text-left">
+                    <div className="bg-header/30 p-4 rounded-lg">
+                        <h3 className="text-base sm:text-lg font-semibold text-text-secondary mb-2 sm:mb-3 flex items-center">
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-text-primary text-header mr-2 text-sm font-bold">
+                                1
+                            </span>
                             Les Caches
                         </h3>
-                        <ul className="text-text-primary text-sm sm:text-base space-y-1 sm:space-y-2 pl-5 sm:pl-7">
+                        <ul className="text-text-primary text-sm sm:text-base space-y-2 pl-8">
                             <li className="list-disc">
                                 Faites glisser un cache coloré depuis la colonne
                                 de gauche
@@ -84,12 +101,14 @@ const HelpOverlay = () => {
                         </ul>
                     </div>
 
-                    <div className="mb-3 sm:mb-4">
-                        <h3 className="text-base sm:text-lg font-semibold text-text-secondary mb-1 sm:mb-2 flex items-center">
-                            <span className="mr-2 text-text-primary">2.</span>
+                    <div className="bg-header/30 p-4 rounded-lg">
+                        <h3 className="text-base sm:text-lg font-semibold text-text-secondary mb-2 sm:mb-3 flex items-center">
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-text-primary text-header mr-2 text-sm font-bold">
+                                2
+                            </span>
                             Le Masque
                         </h3>
-                        <ul className="text-text-primary text-sm sm:text-base space-y-1 sm:space-y-2 pl-5 sm:pl-7">
+                        <ul className="text-text-primary text-sm sm:text-base space-y-2 pl-8">
                             <li className="list-disc">
                                 Faites glisser le masque depuis la colonne de
                                 droite
@@ -105,12 +124,14 @@ const HelpOverlay = () => {
                         </ul>
                     </div>
 
-                    <div className="mb-3 sm:mb-4">
-                        <h3 className="text-base sm:text-lg font-semibold text-text-secondary mb-1 sm:mb-2 flex items-center">
-                            <span className="mr-2 text-text-primary">3.</span>
+                    <div className="bg-header/30 p-4 rounded-lg">
+                        <h3 className="text-base sm:text-lg font-semibold text-text-secondary mb-2 sm:mb-3 flex items-center">
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-text-primary text-header mr-2 text-sm font-bold">
+                                3
+                            </span>
                             Ordre des nombres
                         </h3>
-                        <ul className="text-text-primary text-sm sm:text-base space-y-1 sm:space-y-2 pl-5 sm:pl-7">
+                        <ul className="text-text-primary text-sm sm:text-base space-y-2 pl-8">
                             <li className="list-disc">
                                 Utilisez le bouton "Ordre" en bas à droite pour
                                 basculer entre l'ordre croissant (0-99) et
@@ -123,12 +144,14 @@ const HelpOverlay = () => {
                         </ul>
                     </div>
 
-                    <div className="mb-3 sm:mb-4">
-                        <h3 className="text-base sm:text-lg font-semibold text-text-secondary mb-1 sm:mb-2 flex items-center">
-                            <span className="mr-2 text-text-primary">4.</span>
+                    <div className="bg-header/30 p-4 rounded-lg">
+                        <h3 className="text-base sm:text-lg font-semibold text-text-secondary mb-2 sm:mb-3 flex items-center">
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-text-primary text-header mr-2 text-sm font-bold">
+                                4
+                            </span>
                             Annuler / Rétablir
                         </h3>
-                        <ul className="text-text-primary text-sm sm:text-base space-y-1 sm:space-y-2 pl-5 sm:pl-7">
+                        <ul className="text-text-primary text-sm sm:text-base space-y-2 pl-8">
                             <li className="list-disc">
                                 Utilisez les boutons d'annulation et de
                                 rétablissement pour revenir à des états
@@ -143,10 +166,11 @@ const HelpOverlay = () => {
                     </div>
                 </div>
 
-                <div className="text-center mt-4 sm:mt-6 sticky bottom-0 pb-2 pt-3 bg-background">
+                {/* Bouton en bas */}
+                <div className="text-center mt-6 sm:mt-8 sticky bottom-0 pb-2 pt-3 bg-background z-10">
                     <button
                         onClick={toggleHelp}
-                        className="bg-header hover:bg-opacity-80 text-text-primary px-4 sm:px-6 py-1.5 sm:py-2 rounded-md font-medium transition-colors"
+                        className="bg-header hover:bg-opacity-80 text-text-primary px-6 sm:px-8 py-2 sm:py-2.5 rounded-md font-medium transition-colors"
                         aria-label="Fermer l'aide"
                     >
                         J'ai compris

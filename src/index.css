@@ -45,3 +45,80 @@
 .draggable-item {
     @apply absolute cursor-pointer;
 }
+
+/* Ajoutez dans src/index.css ou créez un fichier TeacherGuide.css */
+
+.guide-content h1 {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(242, 220, 179, 0.3);
+    padding-bottom: 0.5rem;
+}
+
+.guide-content h2 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.guide-content h3 {
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.guide-content p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.guide-content ul {
+    list-style-type: disc;
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.guide-content ol {
+    list-style-type: decimal;
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.guide-content li {
+    margin-bottom: 0.5rem;
+}
+
+.guide-content blockquote {
+    border-left: 4px solid rgba(242, 178, 141, 0.7);
+    padding-left: 1rem;
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: 1rem;
+    font-style: italic;
+}
+
+.guide-content code {
+    background-color: rgba(26, 53, 64, 0.5);
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-family: monospace;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .guide-content h1 {
+        font-size: 1.5rem;
+    }
+
+    .guide-content h2 {
+        font-size: 1.3rem;
+    }
+
+    .guide-content h3 {
+        font-size: 1.1rem;
+    }
+}

@@ -11,6 +11,7 @@ const initialState = {
     // Configurations générales
     ordre: "0-99",
     showHelp: false,
+    showTeacherGuide: false,
 
     // Dimensions et mise en page
     windowSize: { width: window.innerWidth, height: window.innerHeight },
@@ -39,6 +40,7 @@ const initialState = {
 const actions = {
     SET_ORDRE: "SET_ORDRE",
     TOGGLE_HELP: "TOGGLE_HELP",
+    TOGGLE_TEACHER_GUIDE: "TOGGLE_TEACHER_GUIDE",
     SET_WINDOW_SIZE: "SET_WINDOW_SIZE",
     SET_HEADER_HEIGHT: "SET_HEADER_HEIGHT",
     SET_CHATEAU_DIMENSIONS: "SET_CHATEAU_DIMENSIONS",
@@ -62,6 +64,9 @@ function chateauReducer(state, action) {
 
         case actions.TOGGLE_HELP:
             return { ...state, showHelp: !state.showHelp };
+
+        case actions.TOGGLE_TEACHER_GUIDE:
+            return { ...state, showTeacherGuide: !state.showTeacherGuide };
 
         case actions.SET_WINDOW_SIZE:
             return {
@@ -381,6 +386,11 @@ export function ChateauProvider({ children }) {
         dispatch({ type: actions.TOGGLE_HELP });
     }, []);
 
+    // Afficher/masquer le guide pédagogique
+    const toggleTeacherGuide = useCallback(() => {
+        dispatch({ type: actions.TOGGLE_TEACHER_GUIDE });
+    }, []);
+
     // Gestionnaire de redimensionnement de la fenêtre
     const handleWindowResize = useCallback((width, height) => {
         dispatch({
@@ -514,6 +524,7 @@ export function ChateauProvider({ children }) {
         // Actions
         toggleOrdre,
         toggleHelp,
+        toggleTeacherGuide,
         setHeaderHeight,
         updateChateauDimensions,
         calculatePositions,
