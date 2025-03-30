@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import Masque from "./Masque";
 
 function DraggableMasque({
@@ -61,32 +61,40 @@ function DraggableMasque({
         }
     }, [initialX, initialY, isSource, isDragging]);
 
-    useEffect(() => {
-        const handleMouseMove = (e) => {
-            if (!isDragging) return;
+    // Fonction pour vérifier si les coordonnées sont au-dessus de la poubelle
+    const isOverTrash = useCallback((x, y) => {
+        const trashElement = document.querySelector(".trash-element");
+        if (!trashElement) return false;
 
-            // Calculer la nouvelle position en tenant compte du décalage
-            const newX = e.clientX - offset.current.x;
-            const newY = e.clientY - offset.current.y;
+        const trashRect = trashElement.getBoundingClientRect();
 
-            setPosition({ x: newX, y: newY });
-        };
+        // Zone de détection élargie pour faciliter le drop
+        const buffer = 40;
+        return (
+            x >= trashRect.left - buffer &&
+            x <= trashRect.right + buffer &&
+            y >= trashRect.top - buffer &&
+            y <= trashRect.bottom + buffer
+        );
+    }, []);
 
-        const handleMouseUp = (e) => {
+    // Fonction commune pour gérer la fin d'un glisser-déposer
+    const handleDragEnd = useCallback(
+        (clientX, clientY) => {
             if (!isDragging) return;
 
             // Vérifier si on a déposé sur la poubelle
-            if (isOverTrash(e.clientX, e.clientY)) {
+            if (isOverTrash(clientX, clientY)) {
                 if (!isSource) {
                     // Si ce n'est pas une source, on le supprime
-                    setIsVisible(false);
-
-                    // Animation de suppression
                     if (masqueRef.current) {
+                        // Animation de suppression
                         masqueRef.current.classList.add("deleting");
                         setTimeout(() => {
                             setIsVisible(false);
                         }, 300);
+                    } else {
+                        setIsVisible(false);
                     }
                 }
             } else if (isDragging && isSource) {
@@ -94,11 +102,11 @@ function DraggableMasque({
                 const newId = nextIdRef.current++;
 
                 // Calculer la position exacte pour le nouveau clone
-                const newX = e.clientX - offset.current.x;
-                const newY = e.clientY - offset.current.y;
+                const newX = clientX - offset.current.x;
+                const newY = clientY - offset.current.y;
 
-                setClones([
-                    ...clones,
+                setClones((prev) => [
+                    ...prev,
                     {
                         id: newId,
                         x: newX,
@@ -114,23 +122,24 @@ function DraggableMasque({
 
             setIsDragging(false);
             document.body.style.cursor = "default";
+        },
+        [isDragging, isSource, absolutePosition, isOverTrash]
+    );
+
+    // Gestionnaires d'événements souris
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!isDragging) return;
+
+            // Calculer la nouvelle position en tenant compte du décalage
+            const newX = e.clientX - offset.current.x;
+            const newY = e.clientY - offset.current.y;
+
+            setPosition({ x: newX, y: newY });
         };
 
-        // Fonction pour vérifier si les coordonnées sont au-dessus de la poubelle
-        const isOverTrash = (x, y) => {
-            const trashElement = document.querySelector(".trash-element");
-            if (!trashElement) return false;
-
-            const trashRect = trashElement.getBoundingClientRect();
-
-            // Zone de détection élargie pour faciliter le drop
-            const buffer = 40;
-            return (
-                x >= trashRect.left - buffer &&
-                x <= trashRect.right + buffer &&
-                y >= trashRect.top - buffer &&
-                y <= trashRect.bottom + buffer
-            );
+        const handleMouseUp = (e) => {
+            handleDragEnd(e.clientX, e.clientY);
         };
 
         if (isDragging) {
@@ -144,9 +153,11 @@ function DraggableMasque({
         return () => {
             document.removeEventListener("mousemove", handleMouseMove);
             document.removeEventListener("mouseup", handleMouseUp);
-            document.body.style.cursor = "default";
+            if (!isDragging) {
+                document.body.style.cursor = "default";
+            }
         };
-    }, [isDragging, isSource, clones, absolutePosition]);
+    }, [isDragging, handleDragEnd]);
 
     // Gérer le redimensionnement de la fenêtre
     useEffect(() => {
@@ -169,6 +180,7 @@ function DraggableMasque({
         return () => window.removeEventListener("resize", handleResize);
     }, [isSource, isSidebarItem, masqueSize]);
 
+    // Gestionnaire d'événement souris
     const handleMouseDown = (e) => {
         if (!masqueRef.current) return;
 
@@ -188,6 +200,69 @@ function DraggableMasque({
         if (masqueRef.current) {
             masqueRef.current.style.zIndex = "1000";
         }
+    };
+
+    // Gestionnaires d'événements tactiles
+    const handleTouchStart = (e) => {
+        if (!masqueRef.current) return;
+
+        // Empêcher le comportement par défaut comme le défilement
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Récupérer le premier point de contact
+        const touch = e.touches[0];
+
+        // Calculer le décalage entre le toucher et le coin de l'élément
+        const rect = masqueRef.current.getBoundingClientRect();
+        offset.current = {
+            x: touch.clientX - rect.left,
+            y: touch.clientY - rect.top,
+        };
+
+        setIsDragging(true);
+
+        // S'assurer que l'élément est au-dessus des autres
+        if (masqueRef.current) {
+            masqueRef.current.style.zIndex = "1000";
+        }
+    };
+
+    const handleTouchMove = (e) => {
+        if (!isDragging) return;
+
+        // Empêcher le défilement pendant le glissement
+        e.preventDefault();
+
+        // Obtenir les coordonnées du toucher
+        const touch = e.touches[0];
+
+        // Calculer la nouvelle position
+        const newX = touch.clientX - offset.current.x;
+        const newY = touch.clientY - offset.current.y;
+
+        setPosition({ x: newX, y: newY });
+    };
+
+    const handleTouchEnd = (e) => {
+        if (!isDragging) return;
+
+        // Si nous avons des changements (touches restantes), utiliser leur position
+        // Sinon utiliser la dernière position connue
+        let clientX, clientY;
+
+        if (e.changedTouches && e.changedTouches.length > 0) {
+            const touch = e.changedTouches[0];
+            clientX = touch.clientX;
+            clientY = touch.clientY;
+        } else {
+            // Utiliser la position actuelle comme fallback
+            const rect = masqueRef.current.getBoundingClientRect();
+            clientX = rect.left + rect.width / 2;
+            clientY = rect.top + rect.height / 2;
+        }
+
+        handleDragEnd(clientX, clientY);
     };
 
     // Rendu des clones (uniquement si c'est une source)
@@ -213,6 +288,9 @@ function DraggableMasque({
                 ref={masqueRef}
                 className="draggable-masque"
                 onMouseDown={handleMouseDown}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
                 style={{
                     position: "fixed", // Utiliser fixed pour se positionner par rapport au viewport
                     left: `${position.x}px`,
@@ -223,7 +301,7 @@ function DraggableMasque({
                         ? "0 8px 16px rgba(0,0,0,0.5)"
                         : "0 4px 8px rgba(0,0,0,0.3)",
                     cursor: isDragging ? "grabbing" : "grab",
-                    touchAction: "none",
+                    touchAction: "none", // Important pour éviter les comportements par défaut sur mobile
                     zIndex: isDragging ? 1000 : isSource ? 100 : 500,
                     transition: isDragging
                         ? "none"
@@ -232,12 +310,21 @@ function DraggableMasque({
                     transformOrigin: "center",
                     pointerEvents: "auto", // S'assurer que l'élément capture les événements souris
                     userSelect: "none",
+                    WebkitUserSelect: "none", // Pour Safari
+                    WebkitTouchCallout: "none", // Désactiver le menu contextuel sur iOS
                 }}
                 title={
                     isSource
                         ? "Glisser pour créer un masque"
                         : "Glisser ou déposer dans la poubelle pour supprimer"
                 }
+                aria-label={
+                    isSource
+                        ? `Masque d'opérations - glisser pour créer`
+                        : `Masque d'opérations - glisser ou déposer dans la poubelle pour supprimer`
+                }
+                role="button"
+                tabIndex={0} // Permettre la navigation au clavier
             >
                 <Masque
                     ordre={ordre}

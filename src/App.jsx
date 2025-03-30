@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Chateau from "./components/Chateau";
 import Header from "./components/Header";
 import ContactLink from "./components/ContactLink";
@@ -25,8 +25,13 @@ function App() {
     const [cellDimensions, setCellDimensions] = useState(null);
     const [ordre, setOrdre] = useState("99-0");
     const [showHelp, setShowHelp] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
-    const [isPortrait, setIsPortrait] = useState(false);
+
+    // États dérivés pour la responsivité
+    const isMobile = useMemo(() => windowSize.width < 768, [windowSize.width]);
+    const isPortrait = useMemo(
+        () => windowSize.height > windowSize.width,
+        [windowSize]
+    );
 
     // États pour les positions des éléments
     const [cachePositions, setCachePositions] = useState([]);
@@ -35,35 +40,7 @@ function App() {
     // Couleurs des caches
     const cacheColors = ["#B33514", "#FF9117", "#FF5700", "#0079B3", "#00FFEA"];
 
-    // Détecter l'orientation et le type d'appareil
-    useEffect(() => {
-        const checkOrientation = () => {
-            const portrait = window.innerHeight > window.innerWidth;
-            setIsPortrait(portrait);
-        };
-
-        const checkDevice = () => {
-            // Détecter si on est sur mobile/tablette
-            const mobile =
-                /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-                    navigator.userAgent
-                ) || window.innerWidth < 768;
-            setIsMobile(mobile);
-        };
-
-        checkOrientation();
-        checkDevice();
-
-        window.addEventListener("resize", checkOrientation);
-        window.addEventListener("resize", checkDevice);
-
-        return () => {
-            window.removeEventListener("resize", checkOrientation);
-            window.removeEventListener("resize", checkDevice);
-        };
-    }, []);
-
-    // Gestion du redimensionnement de la fenêtre de manière optimisée
+    // Gestionnaire de redimensionnement optimisé
     useEffect(() => {
         const handleResize = () => {
             setWindowSize({
@@ -72,30 +49,55 @@ function App() {
             });
         };
 
-        // Utiliser un debounce pour éviter trop d'appels lors du redimensionnement
-        let timeoutId;
         const debouncedResize = () => {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(handleResize, 100);
+            clearTimeout(window.resizeTimeout);
+            window.resizeTimeout = setTimeout(handleResize, 100);
         };
 
         window.addEventListener("resize", debouncedResize);
-        handleResize();
+        handleResize(); // Initial call
 
         return () => {
-            clearTimeout(timeoutId);
+            clearTimeout(window.resizeTimeout);
             window.removeEventListener("resize", debouncedResize);
         };
     }, []);
 
-    // Mise à jour des dimensions après le rendu
+    // Mise à jour de la hauteur du header
     useEffect(() => {
         if (headerRef.current) {
-            setHeaderHeight(headerRef.current.offsetHeight);
+            const height = headerRef.current.offsetHeight;
+            setHeaderHeight(height);
         }
     }, [windowSize]);
 
-    // Gérer le chargement de l'image du château avec un callback mémorisé
+    // Calcul optimisé du layout
+    const layoutStyle = useMemo(() => {
+        const mainHeight = windowSize.height - headerHeight;
+
+        if (isPortrait && isMobile) {
+            // Calcul des hauteurs en mode portrait
+            const topRowHeight = Math.max(80, cellSize + 20);
+            const bottomRowHeight = Math.max(100, cellSize * 3 + 20);
+            const mainAreaHeight = mainHeight - topRowHeight - bottomRowHeight;
+
+            return {
+                flexDirection: "column",
+                topRowHeight,
+                bottomRowHeight,
+                mainAreaHeight,
+                mainHeight,
+            };
+        } else {
+            // Mode paysage standard
+            return {
+                flexDirection: "row",
+                mainHeight,
+            };
+        }
+    }, [isPortrait, isMobile, cellSize, windowSize.height, headerHeight]);
+
+    // Gestionnaire de chargement du château optimisé
     const handleChateauLoad = useCallback(
         (width, cellData) => {
             if (!width || typeof width !== "number" || width <= 0) {
@@ -104,42 +106,37 @@ function App() {
                     width,
                     "- utilisation d'une valeur par défaut"
                 );
-                width = 867; // Valeur par défaut si la largeur est invalide
+                width = 867; // Valeur par défaut
             }
 
-            // Stocker les dimensions des cellules pour les utiliser plus tard
+            // Stocker les dimensions des cellules
             if (cellData) {
                 setCellDimensions(cellData);
-                console.log("Dimensions des cellules détectées:", cellData);
             }
 
-            // Calculer les dimensions du château en tenant compte de l'orientation
+            // Calcul des dimensions du château
             const maxHeight = windowSize.height - headerHeight - 40;
             const maxWidth = isPortrait
-                ? windowSize.width * 0.9 // Prendre plus de place en portrait
-                : windowSize.width * 0.6; // Limiter en paysage
+                ? windowSize.width * 0.9
+                : windowSize.width * 0.6;
 
-            const aspectRatio = 65.03 / 86.7; // Rapport hauteur/largeur du SVG original
+            const aspectRatio = 65.03 / 86.7; // Rapport hauteur/largeur du SVG
 
-            // Calculer la taille optimale en respectant les contraintes
+            // Calcul des dimensions optimales
             let adjustedWidth, height;
 
             if (isPortrait) {
-                // En portrait, on maximise la largeur
                 adjustedWidth = Math.min(maxWidth, width);
                 height = adjustedWidth * aspectRatio;
 
-                // Vérifier que la hauteur ne dépasse pas
                 if (height > maxHeight) {
                     height = maxHeight;
                     adjustedWidth = height / aspectRatio;
                 }
             } else {
-                // En paysage, on calcule en fonction de la hauteur
                 height = Math.min(maxHeight, width * aspectRatio);
                 adjustedWidth = height / aspectRatio;
 
-                // Vérifier que la largeur ne dépasse pas
                 if (adjustedWidth > maxWidth) {
                     adjustedWidth = maxWidth;
                     height = adjustedWidth * aspectRatio;
@@ -148,142 +145,97 @@ function App() {
 
             setChateauDimensions({
                 width: adjustedWidth,
-                height: height,
+                height,
             });
 
-            // Calculer la taille d'une cellule en fonction des dimensions réelles détectées
+            // Calcul de la taille d'une cellule
             let newCellSize;
 
             if (cellData && cellData.averageSize) {
-                // Calculer le facteur d'échelle entre le SVG original et la taille affichée
                 const scaleFactor = adjustedWidth / width;
-
-                // Appliquer le facteur d'échelle aux dimensions des cellules
                 newCellSize = Math.ceil(cellData.averageSize * scaleFactor);
 
-                // Assurer que la taille reste dans des limites raisonnables
                 newCellSize = Math.min(
-                    Math.max(
-                        24, // Taille minimum
-                        newCellSize
-                    ),
-                    isMobile ? 40 : 60 // Taille maximum selon le device
+                    Math.max(24, newCellSize),
+                    isMobile ? 40 : 60
                 );
             } else {
-                // Fallback au calcul précédent si les dimensions des cellules ne sont pas disponibles
                 newCellSize = Math.min(
-                    Math.max(
-                        24, // Taille minimum
-                        Math.round((adjustedWidth / width) * 50)
-                    ),
-                    isMobile ? 40 : 60 // Taille maximum selon le device
+                    Math.max(24, Math.round((adjustedWidth / width) * 50)),
+                    isMobile ? 40 : 60
                 );
             }
 
             setCellSize(newCellSize);
-            console.log("Nouvelle taille de cellule calculée:", newCellSize);
 
-            // Recalcul des positions après un court délai
-            setTimeout(() => {
+            // Recalcul après délai pour laisser le DOM se mettre à jour
+            requestAnimationFrame(() => {
                 if (leftColumnRef.current && rightColumnRef.current) {
-                    // Déclencher un recalcul forcé des positions
-                    setWindowSize((prev) => ({ ...prev }));
+                    calculatePositions();
                 }
-            }, 100);
+            });
         },
         [windowSize, headerHeight, isPortrait, isMobile]
     );
 
-    // Calcul des positions des caches et du masque
-    useEffect(() => {
-        // Ne calculer les positions que si toutes les références et dimensions sont disponibles
+    // Fonction séparée pour calculer les positions des éléments
+    const calculatePositions = useCallback(() => {
         if (
             !leftColumnRef.current ||
             !rightColumnRef.current ||
-            cellSize <= 0 ||
-            !chateauDimensions.width
+            cellSize <= 0
         ) {
             return;
         }
 
-        // Adapter la disposition en fonction de l'orientation
+        // Calcul des positions des caches
+        const leftColumnRect = leftColumnRef.current.getBoundingClientRect();
+        const spacing = Math.max(5, Math.round(cellSize * 0.1));
+
         if (isPortrait && isMobile) {
-            // En portrait sur mobile, disposer les caches horizontalement en haut
-            const leftColumnRect =
-                leftColumnRef.current.getBoundingClientRect();
-
-            // Espacement adaptatif entre les caches
-            const spacing = Math.max(5, Math.round(cellSize * 0.1));
-
-            // Largeur totale occupée par tous les caches côte à côte avec espacement
+            // Disposition horizontale pour mobile en portrait
             const totalCachesWidth =
                 (cellSize + spacing) * cacheColors.length - spacing;
-
-            // Position de départ pour centrer horizontalement l'ensemble des caches
             const startX =
                 leftColumnRect.left +
                 (leftColumnRect.width - totalCachesWidth) / 2;
-
-            // Position verticale (centré dans la colonne)
             const centerY =
                 leftColumnRect.top + (leftColumnRect.height - cellSize) / 2;
 
-            // Calculer la position de chaque cache
-            const positions = cacheColors.map((_, index) => {
-                return {
-                    x: startX + index * (cellSize + spacing), // Positionnement horizontal avec espacement
-                    y: centerY,
-                };
-            });
+            const positions = cacheColors.map((_, index) => ({
+                x: startX + index * (cellSize + spacing),
+                y: centerY,
+            }));
 
             setCachePositions(positions);
         } else {
             // Disposition verticale standard
-            const leftColumnRect =
-                leftColumnRef.current.getBoundingClientRect();
-
-            // Espacement adaptatif entre les caches
-            const spacing = Math.max(5, Math.round(cellSize * 0.1));
-
-            // Hauteur totale occupée par tous les caches avec espacement
             const totalCachesHeight =
                 (cellSize + spacing) * cacheColors.length - spacing;
-
-            // Position de départ pour centrer verticalement
             const startY =
                 leftColumnRect.top +
                 (leftColumnRect.height - totalCachesHeight) / 2;
-
-            // Position horizontale (centré dans la colonne)
             const centerX =
                 leftColumnRect.left + (leftColumnRect.width - cellSize) / 2;
 
-            // Calculer la position de chaque cache
-            const positions = cacheColors.map((_, index) => {
-                return {
-                    x: centerX,
-                    y: startY + index * (cellSize + spacing), // Positionnement vertical avec espacement
-                };
-            });
+            const positions = cacheColors.map((_, index) => ({
+                x: centerX,
+                y: startY + index * (cellSize + spacing),
+            }));
 
             setCachePositions(positions);
         }
 
-        // Calculer la position du masque
+        // Calcul de la position du masque
         const rightColumnRect = rightColumnRef.current.getBoundingClientRect();
         const masqueSize = cellSize * 3;
-
-        // S'assurer que le masque ne dépasse pas les limites de la colonne
         const adjustedMasqueSize = Math.min(
             masqueSize,
             rightColumnRect.width * 0.9,
             rightColumnRect.height * 0.8
         );
-
-        // Recalculer la taille d'une cellule du masque si nécessaire
         const adjustedCellSize = adjustedMasqueSize / 3;
 
-        // Calculer le centre de la colonne droite
         const masqueCenterX =
             rightColumnRect.left +
             (rightColumnRect.width - adjustedMasqueSize) / 2;
@@ -291,68 +243,46 @@ function App() {
             rightColumnRect.top +
             (rightColumnRect.height - adjustedMasqueSize) / 2;
 
-        const newMasquePosition = {
+        setMasquePosition({
             x: masqueCenterX,
             y: masqueCenterY,
-            cellSize: adjustedCellSize, // Stocker la taille ajustée pour le masque
-        };
+            cellSize: adjustedCellSize,
+        });
+    }, [cellSize, cacheColors.length, isPortrait, isMobile]);
 
-        setMasquePosition(newMasquePosition);
+    // Recalcul des positions lorsque les dimensions/orientation changent
+    useEffect(() => {
+        calculatePositions();
     }, [
+        calculatePositions,
         windowSize,
         cellSize,
         chateauDimensions,
         headerHeight,
         isPortrait,
         isMobile,
-        cacheColors.length,
     ]);
 
-    // Toggle de l'ordre des nombres (0-99 ou 99-0)
-    const toggleOrdre = () => {
+    // Toggle de l'ordre des nombres
+    const toggleOrdre = useCallback(() => {
         setOrdre((prev) => (prev === "0-99" ? "99-0" : "0-99"));
-    };
+    }, []);
 
     // Toggle pour l'aide
-    const toggleHelp = () => {
+    const toggleHelp = useCallback(() => {
         setShowHelp((prev) => !prev);
-    };
+    }, []);
 
-    // Afficher automatiquement l'aide au premier chargement
+    // Afficher l'aide au premier chargement
     useEffect(() => {
-        // Vérifier si c'est la première visite
         const hasVisitedBefore = localStorage.getItem("chateau_visited");
         if (!hasVisitedBefore) {
-            // Montrer l'aide après un court délai pour laisser l'app se charger
             setTimeout(() => {
                 setShowHelp(true);
-                // Marquer comme visité
                 localStorage.setItem("chateau_visited", "true");
             }, 1000);
         }
     }, []);
-
-    // Calcul de la hauteur disponible pour le contenu principal
-    const mainHeight = windowSize.height - headerHeight;
-
-    // Calcul du layout en fonction de l'orientation
-    const layoutStyle =
-        isPortrait && isMobile
-            ? {
-                  // Disposition pour mode portrait sur mobile
-                  flexDirection: "column",
-                  // La première ligne contient les caches
-                  topRowHeight: Math.max(80, cellSize + 20),
-                  // La dernière ligne contient le masque
-                  bottomRowHeight: Math.max(100, cellSize * 3 + 20),
-                  // La partie centrale contient le château
-                  mainAreaHeight:
-                      mainHeight - 2 * Math.max(100, cellSize * 3 + 20),
-              }
-            : {
-                  // Disposition standard en colonnes
-                  flexDirection: "row",
-              };
 
     return (
         <div className="flex flex-col min-h-screen bg-background">
@@ -361,9 +291,9 @@ function App() {
 
             {/* Contenu principal */}
             <main
-                className="flex flex-1 relative overflow-hidden"
+                className={`flex flex-1 relative overflow-hidden`}
                 style={{
-                    height: `${mainHeight}px`,
+                    height: `${layoutStyle.mainHeight}px`,
                     flexDirection: layoutStyle.flexDirection,
                 }}
             >
@@ -373,14 +303,9 @@ function App() {
                         {/* Rangée supérieure - Caches */}
                         <div
                             ref={leftColumnRef}
-                            className="flex items-center justify-center w-full"
+                            className="flex items-center justify-center w-full bg-header bg-opacity-30 border-b border-dashed border-text-primary border-opacity-50 relative z-50"
                             style={{
                                 height: `${layoutStyle.topRowHeight}px`,
-                                backgroundColor: "rgba(26, 53, 64, 0.3)",
-                                borderBottom:
-                                    "2px dashed rgba(242, 220, 179, 0.5)",
-                                position: "relative",
-                                zIndex: 50,
                             }}
                         >
                             {/* Les caches - positionnés horizontalement */}
@@ -401,11 +326,9 @@ function App() {
 
                         {/* Zone centrale - Château */}
                         <div
-                            className="flex items-center justify-center w-full"
+                            className="flex items-center justify-center w-full relative z-10"
                             style={{
                                 height: `${layoutStyle.mainAreaHeight}px`,
-                                zIndex: 10,
-                                position: "relative",
                             }}
                         >
                             <Chateau
@@ -418,17 +341,12 @@ function App() {
                         {/* Rangée inférieure - Masque */}
                         <div
                             ref={rightColumnRef}
-                            className="flex items-center justify-center w-full"
+                            className="flex items-center justify-center w-full bg-header bg-opacity-30 border-t border-dashed border-text-primary border-opacity-50 relative z-50"
                             style={{
                                 height: `${layoutStyle.bottomRowHeight}px`,
-                                backgroundColor: "rgba(26, 53, 64, 0.3)",
-                                borderTop:
-                                    "2px dashed rgba(242, 220, 179, 0.5)",
-                                position: "relative",
-                                zIndex: 50,
                             }}
                         >
-                            {/* Le masque - positionné au centre avec taille ajustée */}
+                            {/* Le masque */}
                             {cellSize > 0 && masquePosition.x > 0 && (
                                 <DraggableMasque
                                     cellSize={
@@ -449,21 +367,16 @@ function App() {
                         {/* Colonne gauche - Caches */}
                         <div
                             ref={leftColumnRef}
-                            className="flex items-center justify-center"
+                            className="flex items-center justify-center bg-header bg-opacity-30 border-r border-dashed border-text-primary border-opacity-50 relative z-50"
                             style={{
                                 width:
                                     chateauDimensions.width > 0
                                         ? `calc((100% - ${chateauDimensions.width}px) / 2)`
                                         : "20%",
                                 minWidth: isMobile ? "80px" : "100px",
-                                backgroundColor: "rgba(26, 53, 64, 0.3)",
-                                borderRight:
-                                    "2px dashed rgba(242, 220, 179, 0.5)",
-                                position: "relative",
-                                zIndex: 50,
                             }}
                         >
-                            {/* Les caches - positionnés au centre, empilés verticalement */}
+                            {/* Les caches */}
                             {cellSize > 0 &&
                                 cachePositions.length === cacheColors.length &&
                                 cacheColors.map((color, index) => (
@@ -481,19 +394,17 @@ function App() {
 
                         {/* Colonne centrale - Château */}
                         <div
-                            className="flex items-center justify-center"
+                            className="flex items-center justify-center relative z-10"
                             style={{
                                 width:
                                     chateauDimensions.width > 0
                                         ? `${chateauDimensions.width}px`
                                         : "60%",
-                                zIndex: 10,
-                                position: "relative",
                             }}
                         >
                             <Chateau
                                 ordre={ordre}
-                                height={mainHeight - 40}
+                                height={layoutStyle.mainHeight - 40}
                                 onLoad={handleChateauLoad}
                             />
                         </div>
@@ -501,21 +412,16 @@ function App() {
                         {/* Colonne droite - Masque */}
                         <div
                             ref={rightColumnRef}
-                            className="flex items-center justify-center"
+                            className="flex items-center justify-center bg-header bg-opacity-30 border-l border-dashed border-text-primary border-opacity-50 relative z-50"
                             style={{
                                 width:
                                     chateauDimensions.width > 0
                                         ? `calc((100% - ${chateauDimensions.width}px) / 2)`
                                         : "20%",
                                 minWidth: isMobile ? "80px" : "100px",
-                                backgroundColor: "rgba(26, 53, 64, 0.3)",
-                                borderLeft:
-                                    "2px dashed rgba(242, 220, 179, 0.5)",
-                                position: "relative",
-                                zIndex: 50,
                             }}
                         >
-                            {/* Le masque - positionné au centre avec taille ajustée */}
+                            {/* Le masque */}
                             {cellSize > 0 && masquePosition.x > 0 && (
                                 <DraggableMasque
                                     cellSize={
@@ -532,16 +438,18 @@ function App() {
                     </div>
                 )}
 
-                {/* Boutons flottants en position fixe, adaptés pour mobile */}
+                {/* Boutons flottants adaptés pour mobile */}
                 <div
                     className={`fixed ${
-                        isMobile ? "bottom-2 right-2" : "bottom-4 right-4"
-                    } flex flex-col items-end space-y-2 z-50`}
+                        isMobile
+                            ? "bottom-4 right-4 gap-3"
+                            : "bottom-6 right-6 gap-4"
+                    } flex flex-col items-end z-50`}
                 >
                     {/* Sélecteur d'ordre */}
                     <button
                         onClick={toggleOrdre}
-                        className="bg-header hover:bg-opacity-80 text-text-primary px-2 py-1 rounded-md text-sm font-medium transition-colors border border-text-secondary shadow-md"
+                        className="bg-header hover:bg-opacity-80 text-text-primary px-3 py-2 rounded-md text-sm md:text-base font-medium transition-colors border border-text-secondary shadow-md min-w-[100px] md:min-w-[120px] h-10 md:h-12"
                         title="Changer l'ordre de numérotation"
                         aria-label={`Ordre actuel: ${ordre}. Cliquer pour changer`}
                     >
@@ -551,7 +459,7 @@ function App() {
                     {/* Bouton d'aide */}
                     <button
                         onClick={toggleHelp}
-                        className="bg-header hover:bg-opacity-80 text-text-primary w-8 h-8 md:w-10 md:h-10 rounded-full text-lg font-bold transition-colors border border-text-secondary shadow-md flex items-center justify-center"
+                        className="bg-header hover:bg-opacity-80 text-text-primary w-10 h-10 md:w-12 md:h-12 rounded-full text-lg font-bold transition-colors border border-text-secondary shadow-md flex items-center justify-center"
                         title="Afficher l'aide"
                         aria-label="Ouvrir l'aide"
                     >
