@@ -9,7 +9,7 @@ import React, {
 // Définition de l'état initial
 const initialState = {
     // Configurations générales
-    ordre: "99-0",
+    ordre: "0-99",
     showHelp: false,
 
     // Dimensions et mise en page

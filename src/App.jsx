@@ -9,6 +9,7 @@ import HelpOverlay from "./components/HelpOverlay";
 import Trash from "./components/Trash";
 import UndoRedoControls from "./components/UndoRedoControls";
 import UpdateNotification from "./components/common/UpdateNotification";
+import IntuitiveDirectionToggleButton from "./components/IntuitiveDirectionToggleButton";
 import { useChateauContext } from "./contexts/ChateauContext";
 
 function App() {
@@ -339,14 +340,10 @@ function App() {
                     <UndoRedoControls />
 
                     {/* Sélecteur d'ordre */}
-                    <button
-                        onClick={toggleOrdre}
-                        className="bg-header hover:bg-opacity-80 text-text-primary px-3 py-2 rounded-md text-sm md:text-base font-medium transition-colors border border-text-secondary shadow-md min-w-[100px] md:min-w-[120px] h-10 md:h-12"
-                        title="Changer l'ordre de numérotation"
-                        aria-label={`Ordre actuel: ${ordre}. Cliquer pour changer`}
-                    >
-                        Ordre: {ordre}
-                    </button>
+                    <IntuitiveDirectionToggleButton
+                        ordre={ordre}
+                        toggleOrdre={toggleOrdre}
+                    />
 
                     {/* Bouton d'aide */}
                     <button
@@ -367,7 +364,7 @@ function App() {
             {/* Aide conditionnelle */}
             {showHelp && <HelpOverlay />}
             <UpdateNotification />
-            <DebugPanel />
+            {/* <DebugPanel /> */}
         </div>
     );
 }

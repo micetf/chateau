@@ -70,7 +70,7 @@ export function Chateau({ ordre, height, onLoad }) {
 
         // Charger l'image pour obtenir ses dimensions (utiliser une image de taille normale)
         const baseImage =
-            ordre === "0-99" ? "chateau-inverse.png" : "chateau.png";
+            ordre === "0-99" ? "chateau.png" : "chateau-inverse.png";
         img.src = `/img/${baseImage}`;
     }, [ordre, height, onLoad, isLoaded]);
 
@@ -108,7 +108,7 @@ export function Chateau({ ordre, height, onLoad }) {
         return () => window.removeEventListener("resize", handleResize);
     }, [handleResize]);
 
-    const baseImage = ordre === "0-99" ? "chateau-inverse.png" : "chateau.png";
+    const baseImage = ordre === "0-99" ? "chateau.png" : "chateau-inverse.png";
     const imagePath = getOptimalImagePath(baseImage);
 
     return (
