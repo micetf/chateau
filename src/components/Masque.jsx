@@ -20,7 +20,12 @@ const Masque = ({ ordre = "99-0", size = 50 }) => {
             alt={`Masque d'opérations ${ordre}`}
             width={totalSize}
             height={totalSize}
-            style={{ pointerEvents: "none" }}
+            style={{
+                pointerEvents: "none",
+                width: `${totalSize}px`,
+                height: `${totalSize}px`,
+                objectFit: "contain",
+            }}
         />
     );
 };

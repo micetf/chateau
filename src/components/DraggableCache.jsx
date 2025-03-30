@@ -8,14 +8,30 @@ function DraggableCache({
     initialY,
     isSource = false,
     isSidebarItem = false,
+    dimensionsContext = null, // Nouveau paramètre pour le contexte de dimensions
 }) {
     const [position, setPosition] = useState({ x: initialX, y: initialY });
     const [isDragging, setIsDragging] = useState(false);
     const [clones, setClones] = useState([]);
     const [isVisible, setIsVisible] = useState(true);
     const cacheRef = useRef(null);
+    const parentRef = useRef(null);
     const offset = useRef({ x: 0, y: 0 });
     const nextIdRef = useRef(0);
+
+    // Stocker les dimensions initiales pour la mise à l'échelle
+    const initialDimensionsRef = useRef({
+        cellSize: size,
+        windowWidth: window.innerWidth,
+        windowHeight: window.innerHeight,
+    });
+
+    // Obtenir la référence au parent
+    useEffect(() => {
+        if (cacheRef.current && isSource) {
+            parentRef.current = cacheRef.current.parentElement;
+        }
+    }, [isSource]);
 
     // Mettre à jour la position si les coordonnées initiales changent
     useEffect(() => {
@@ -40,6 +56,27 @@ function DraggableCache({
             y <= trashRect.bottom + buffer
         );
     }, []);
+
+    // Mettre à jour les dimensions des clones lors d'un redimensionnement
+    useEffect(() => {
+        if (!dimensionsContext || clones.length === 0) return;
+
+        // Calculer le facteur d'échelle
+        const scaleFactorX =
+            window.innerWidth / initialDimensionsRef.current.windowWidth;
+        const scaleFactorY =
+            window.innerHeight / initialDimensionsRef.current.windowHeight;
+
+        // Mettre à jour les positions des clones
+        setClones((prevClones) =>
+            prevClones.map((clone) => ({
+                ...clone,
+                // Mettre à l'échelle les positions en fonction du redimensionnement de la fenêtre
+                x: clone.originalX ? clone.originalX * scaleFactorX : clone.x,
+                y: clone.originalY ? clone.originalY * scaleFactorY : clone.y,
+            }))
+        );
+    }, [dimensionsContext, window.innerWidth, window.innerHeight]);
 
     // Fonction pour gérer la fin d'un glisser-déposer
     const handleDragEnd = useCallback(
@@ -68,6 +105,10 @@ function DraggableCache({
                 const newX = clientX - offset.current.x;
                 const newY = clientY - offset.current.y;
 
+                // Stocker les positions normalisées pour la mise à l'échelle
+                const normalizedX = newX / window.innerWidth;
+                const normalizedY = newY / window.innerHeight;
+
                 setClones((prev) => [
                     ...prev,
                     {
@@ -75,6 +116,10 @@ function DraggableCache({
                         x: newX,
                         y: newY,
                         color: color,
+                        originalX: newX,
+                        originalY: newY,
+                        normalizedX,
+                        normalizedY,
                     },
                 ]);
             }
@@ -208,16 +253,20 @@ function DraggableCache({
         handleDragEnd(clientX, clientY);
     };
 
+    // Utiliser les dimensions actuelles du contexte
+    const currentSize = dimensionsContext ? dimensionsContext.cellSize : size;
+
     // Rendu des clones (uniquement si c'est une source)
     const cloneElements = isSource
         ? clones.map((clone) => (
               <DraggableCache
                   key={clone.id}
                   color={clone.color}
-                  size={size}
+                  size={currentSize}
                   initialX={clone.x}
                   initialY={clone.y}
                   isSource={false}
+                  dimensionsContext={dimensionsContext}
               />
           ))
         : null;
@@ -238,8 +287,8 @@ function DraggableCache({
                     position: "fixed", // Utiliser fixed pour se positionner par rapport au viewport
                     left: `${position.x}px`,
                     top: `${position.y}px`,
-                    width: `${size}px`,
-                    height: `${size}px`,
+                    width: `${currentSize}px`,
+                    height: `${currentSize}px`,
                     boxShadow: isDragging
                         ? "0 8px 16px rgba(0,0,0,0.5)"
                         : "0 4px 8px rgba(0,0,0,0.3)",
@@ -269,7 +318,7 @@ function DraggableCache({
                 role="button"
                 tabIndex={0} // Permettre la navigation au clavier
             >
-                <Cache color={color} size={size} />
+                <Cache color={color} size={currentSize} />
             </div>
             {cloneElements}
         </>

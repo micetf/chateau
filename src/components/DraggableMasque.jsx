@@ -8,10 +8,15 @@ function DraggableMasque({
     isSource = false,
     ordre = "99-0",
     isSidebarItem = false,
+    dimensionsContext = null,
 }) {
-    // Garantir que la taille du cellSize est raisonnable pour éviter un masque trop grand
-    const adjustedCellSize = Math.min(cellSize, 50);
-    const masqueSize = adjustedCellSize * 3;
+    // Utiliser les dimensions du contexte ou la taille par défaut
+    const currentCellSize = dimensionsContext
+        ? dimensionsContext.cellSize
+        : cellSize;
+    const masqueSize = dimensionsContext
+        ? dimensionsContext.masqueSize
+        : currentCellSize * 3;
 
     const [position, setPosition] = useState({ x: initialX, y: initialY });
     const [isDragging, setIsDragging] = useState(false);
@@ -21,7 +26,22 @@ function DraggableMasque({
     const parentRef = useRef(null);
     const offset = useRef({ x: 0, y: 0 });
     const nextIdRef = useRef(0);
-    const [absolutePosition, setAbsolutePosition] = useState({ x: 0, y: 0 });
+    const [absolutePosition, setAbsolutePosition] = useState({
+        x: initialX,
+        y: initialY,
+    });
+
+    // Référence à la dernière position pour éviter les retours indésirables
+    const lastPositionRef = useRef({ x: initialX, y: initialY });
+
+    // Synchroniser les positions initiales uniquement lors du montage ou si c'est une source
+    useEffect(() => {
+        if (isSource) {
+            setPosition({ x: initialX, y: initialY });
+            setAbsolutePosition({ x: initialX, y: initialY });
+            lastPositionRef.current = { x: initialX, y: initialY };
+        }
+    }, [initialX, initialY, isSource]);
 
     // Obtenir la référence au parent
     useEffect(() => {
@@ -47,19 +67,16 @@ function DraggableMasque({
         }
     }, [isSource, isSidebarItem, masqueSize]);
 
-    // Mettre à jour la position si la position absolue change
+    // Mettre à jour la position si la position absolue change (uniquement pour les sources)
     useEffect(() => {
         if (isSource && !isDragging) {
             setPosition({ x: absolutePosition.x, y: absolutePosition.y });
+            lastPositionRef.current = {
+                x: absolutePosition.x,
+                y: absolutePosition.y,
+            };
         }
     }, [absolutePosition, isSource, isDragging]);
-
-    // Mettre à jour la position si les coordonnées initiales changent
-    useEffect(() => {
-        if (!isSource && !isDragging) {
-            setPosition({ x: initialX, y: initialY });
-        }
-    }, [initialX, initialY, isSource, isDragging]);
 
     // Fonction pour vérifier si les coordonnées sont au-dessus de la poubelle
     const isOverTrash = useCallback((x, y) => {
@@ -83,6 +100,10 @@ function DraggableMasque({
         (clientX, clientY) => {
             if (!isDragging) return;
 
+            // Nouvelle position calculée
+            const newX = clientX - offset.current.x;
+            const newY = clientY - offset.current.y;
+
             // Vérifier si on a déposé sur la poubelle
             if (isOverTrash(clientX, clientY)) {
                 if (!isSource) {
@@ -101,10 +122,6 @@ function DraggableMasque({
                 // Si c'est une source et qu'on n'est pas sur la poubelle, créer un clone
                 const newId = nextIdRef.current++;
 
-                // Calculer la position exacte pour le nouveau clone
-                const newX = clientX - offset.current.x;
-                const newY = clientY - offset.current.y;
-
                 setClones((prev) => [
                     ...prev,
                     {
@@ -113,11 +130,15 @@ function DraggableMasque({
                         y: newY,
                     },
                 ]);
-            }
 
-            // Si c'est une source, revenir à la position initiale
-            if (isSource) {
+                // Revenir à la position initiale pour la source
                 setPosition(absolutePosition);
+                lastPositionRef.current = absolutePosition;
+            } else {
+                // Si ce n'est pas une source et qu'on n'est pas sur la poubelle,
+                // mettre à jour la position et la sauvegarder dans lastPositionRef
+                setPosition({ x: newX, y: newY });
+                lastPositionRef.current = { x: newX, y: newY };
             }
 
             setIsDragging(false);
@@ -270,11 +291,12 @@ function DraggableMasque({
         ? clones.map((clone) => (
               <DraggableMasque
                   key={clone.id}
-                  cellSize={adjustedCellSize}
+                  cellSize={currentCellSize}
                   initialX={clone.x}
                   initialY={clone.y}
                   isSource={false}
                   ordre={ordre}
+                  dimensionsContext={dimensionsContext}
               />
           ))
         : null;
@@ -326,12 +348,7 @@ function DraggableMasque({
                 role="button"
                 tabIndex={0} // Permettre la navigation au clavier
             >
-                <Masque
-                    ordre={ordre}
-                    size={adjustedCellSize}
-                    baseColor="#FFFF99"
-                    accentColor="#FFEE66"
-                />
+                <Masque ordre={ordre} size={currentCellSize} />
             </div>
             {cloneElements}
         </>

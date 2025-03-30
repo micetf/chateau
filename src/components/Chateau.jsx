@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 export function Chateau({ ordre, height, onLoad }) {
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
     const [isLoaded, setIsLoaded] = useState(false);
-    const [cellData, setCellData] = useState(null);
+
+    // Dimensions connues de l'image originale et des fenêtres
+    const ORIGINAL_WIDTH = 1024;
+    const WINDOW_SIZE = 52;
 
     // Charger l'image du château en fonction de l'ordre
     useEffect(() => {
@@ -23,26 +26,59 @@ export function Chateau({ ordre, height, onLoad }) {
                 height: newHeight,
             });
 
-            // Définir les dimensions des cellules (estimation basée sur les dimensions connues)
-            const estimatedCellSize = {
-                cellWidth: Math.ceil(newWidth / 10), // 10 colonnes
-                cellHeight: Math.ceil(newHeight / 10), // 10 lignes
-                averageSize: Math.ceil((newWidth / 10 + newHeight / 10) / 2),
-                rows: 10,
-                columns: 10,
-            };
+            // Calculer le facteur d'échelle
+            const scaleFactor = newWidth / ORIGINAL_WIDTH;
 
-            setCellData(estimatedCellSize);
+            // Calculer la taille d'une fenêtre mise à l'échelle
+            const scaledWindowSize = WINDOW_SIZE * scaleFactor;
 
-            // Notifier le parent que l'image est chargée avec ses dimensions
+            // Notifier le parent avec la taille d'une fenêtre
             if (!isLoaded) {
-                onLoad(newWidth, estimatedCellSize);
+                onLoad(newWidth, {
+                    cellWidth: scaledWindowSize,
+                    cellHeight: scaledWindowSize,
+                    averageSize: scaledWindowSize,
+                });
                 setIsLoaded(true);
             }
         };
 
         img.src = imagePath;
     }, [ordre, height, onLoad, isLoaded]);
+
+    // Fonction pour recalculer les dimensions lors d'un redimensionnement
+    const handleResize = useCallback(() => {
+        if (isLoaded) {
+            // Recalculer les dimensions en respectant le ratio
+            const aspectRatio = dimensions.width / dimensions.height;
+            const newHeight = height;
+            const newWidth = newHeight * aspectRatio;
+
+            setDimensions({
+                width: newWidth,
+                height: newHeight,
+            });
+
+            // Calculer le facteur d'échelle
+            const scaleFactor = newWidth / ORIGINAL_WIDTH;
+
+            // Calculer la taille d'une fenêtre mise à l'échelle
+            const scaledWindowSize = WINDOW_SIZE * scaleFactor;
+
+            // Notifier le parent des nouvelles dimensions
+            onLoad(newWidth, {
+                cellWidth: scaledWindowSize,
+                cellHeight: scaledWindowSize,
+                averageSize: scaledWindowSize,
+            });
+        }
+    }, [isLoaded, dimensions, height, onLoad]);
+
+    // Écouter les événements de redimensionnement
+    useEffect(() => {
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, [handleResize]);
 
     return (
         <div className="flex justify-center w-full">
@@ -62,7 +98,12 @@ export function Chateau({ ordre, height, onLoad }) {
                         alt="Château des nombres"
                         width={dimensions.width}
                         height={dimensions.height}
-                        style={{ display: "block" }}
+                        style={{
+                            display: "block",
+                            width: `${dimensions.width}px`,
+                            height: `${dimensions.height}px`,
+                            objectFit: "contain",
+                        }}
                     />
                 )}
             </div>
