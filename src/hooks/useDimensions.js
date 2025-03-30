@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 
 // Hook personnalisé pour gérer toutes les dimensions de l'application
 export function useDimensions(windowSize, headerHeight) {

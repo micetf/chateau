@@ -18,7 +18,7 @@ self.__WB_MANIFEST = self.__WB_MANIFEST || [];
 precacheAndRoute(self.__WB_MANIFEST);
 
 // Gestion des URLs de navigation (pour le SPA)
-const handler = createHandlerBoundToURL("/index.html");
+const handler = createHandlerBoundToURL("/chateau/index.html");
 const navigationRoute = new NavigationRoute(handler);
 registerRoute(navigationRoute);
 

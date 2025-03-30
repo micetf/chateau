@@ -2,7 +2,7 @@
     "name": "Le Château des Nombres",
     "short_name": "Château",
     "description": "Application pédagogique pour l'apprentissage des nombres à l'école primaire",
-    "start_url": "/",
+    "start_url": "/chateau/",
     "display": "standalone",
     "background_color": "#1a3540",
     "theme_color": "#536e7d",

@@ -7,7 +7,7 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-    base: "./",
+    base: "/chateau/",
     assetsInclude: ["**/*.pdf"],
     plugins: [
         react(),
@@ -84,7 +84,6 @@ export default defineConfig({
             output: {
                 manualChunks: {
                     "react-vendor": ["react", "react-dom", "react-draggable"],
-                    "ui-vendor": ["jquery", "jquery-ui"],
                 },
                 // Nommage intelligent des fichiers pour un meilleur cache
                 entryFileNames: "assets/[name]-[hash].js",
