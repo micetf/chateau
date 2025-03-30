@@ -18,7 +18,13 @@ export default defineConfig({
             ]),
         }),
         VitePWA({
-            registerType: "autoUpdate",
+            registerType: "prompt",
+            strategies: "injectManifest",
+            srcDir: "src",
+            filename: "service-worker.js",
+            injectManifest: {
+                injectionPoint: "self.__WB_MANIFEST",
+            },
             workbox: {
                 globPatterns: [
                     "**/*.{js,css,html,png,jpg,jpeg,gif,svg,webp,avif,ico}",
@@ -58,6 +64,9 @@ export default defineConfig({
                         type: "image/png",
                     },
                 ],
+            },
+            devOptions: {
+                enabled: true,
             },
         }),
     ],

@@ -1,4 +1,5 @@
 import { useRef, useEffect, useCallback } from "react";
+import DebugPanel from "./components/DebugPanel"; // En haut de votre fichier App.jsx
 import Chateau from "./components/Chateau";
 import Header from "./components/Header";
 import ContactLink from "./components/ContactLink";
@@ -7,7 +8,7 @@ import DraggableMasque from "./components/DraggableMasque";
 import HelpOverlay from "./components/HelpOverlay";
 import Trash from "./components/Trash";
 import UndoRedoControls from "./components/UndoRedoControls";
-import DebugPanel from "./components/DebugPanel"; // En haut de votre fichier App.jsx
+import UpdateNotification from "./components/common/UpdateNotification";
 import { useChateauContext } from "./contexts/ChateauContext";
 
 function App() {
@@ -365,6 +366,7 @@ function App() {
 
             {/* Aide conditionnelle */}
             {showHelp && <HelpOverlay />}
+            <UpdateNotification />
             <DebugPanel />
         </div>
     );
