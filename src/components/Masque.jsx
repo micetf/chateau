@@ -11,13 +11,13 @@ const Masque = memo(function Masque({ ordre = "99-0", size = 50 }) {
 
     return (
         <OptimizedImage
-            src={`/img/${imageName}`}
+            src={`./img/${imageName}`}
             alt={`Masque d'opérations ${ordre}`}
             width={totalSize}
             height={totalSize}
             style={{ pointerEvents: "none" }}
             // Fallback pour les navigateurs qui ne supportent pas WebP
-            onError={() => `/img/${imageName.replace(".webp", ".png")}`}
+            onError={() => `./img/${imageName.replace(".webp", ".png")}`}
         />
     );
 });

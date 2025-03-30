@@ -30,7 +30,7 @@ export function Chateau({ ordre, height, onLoad }) {
             }
 
             // Construire le chemin d'image avec la taille optimale
-            return `/img/${baseImage.replace(".png", "")}-${optimalSize}.webp`;
+            return `./img/${baseImage.replace(".png", "")}-${optimalSize}.webp`;
         },
         [height]
     );
@@ -71,7 +71,7 @@ export function Chateau({ ordre, height, onLoad }) {
         // Charger l'image pour obtenir ses dimensions (utiliser une image de taille normale)
         const baseImage =
             ordre === "0-99" ? "chateau.png" : "chateau-inverse.png";
-        img.src = `/img/${baseImage}`;
+        img.src = `./img/${baseImage}`;
     }, [ordre, height, onLoad, isLoaded]);
 
     // Fonction pour recalculer les dimensions lors d'un redimensionnement
@@ -133,7 +133,7 @@ export function Chateau({ ordre, height, onLoad }) {
                         }}
                         // Fallback pour les navigateurs qui ne supportent pas WebP
                         onError={() => {
-                            const fallbackSrc = `/img/${baseImage}`;
+                            const fallbackSrc = `./img/${baseImage}`;
                             if (imagePath !== fallbackSrc) {
                                 return fallbackSrc;
                             }

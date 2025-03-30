@@ -15,13 +15,13 @@ const Cache = memo(function Cache({ color, size }) {
 
     return (
         <OptimizedImage
-            src={`/img/cache-${colorCode}.webp`}
+            src={`./img/cache-${colorCode}.webp`}
             alt={`Cache ${colorCode}`}
             width={size}
             height={size}
             style={{ pointerEvents: "none" }}
             // Fallback pour les navigateurs qui ne supportent pas WebP
-            onError={() => `/img/cache-${colorCode}.png`}
+            onError={() => `./img/cache-${colorCode}.png`}
         />
     );
 });
