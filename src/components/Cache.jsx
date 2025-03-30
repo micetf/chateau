@@ -1,7 +1,9 @@
-import React, {memo} from "react";
+// src/components/Cache.jsx - Version optimisée
+import React, { memo } from "react";
+import OptimizedImage from "./common/OptimizedImage";
 
 /**
- * Composant pour les caches colorés utilisant des images PNG
+ * Composant pour les caches colorés utilisant des images WebP optimisées avec fallback PNG
  *
  * @param {Object} props - Les propriétés du composant
  * @param {string} props.color - La couleur du cache (pour sélectionner l'image appropriée)
@@ -12,12 +14,14 @@ const Cache = memo(function Cache({ color, size }) {
     const colorCode = color.replace("#", "");
 
     return (
-        <img
-            src={`/img/cache-${colorCode}.png`}
+        <OptimizedImage
+            src={`/img/cache-${colorCode}.webp`}
             alt={`Cache ${colorCode}`}
             width={size}
             height={size}
             style={{ pointerEvents: "none" }}
+            // Fallback pour les navigateurs qui ne supportent pas WebP
+            onError={() => `/img/cache-${colorCode}.png`}
         />
     );
 });

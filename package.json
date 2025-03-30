@@ -6,9 +6,11 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "vite build",
+        "optimize-images": "node scripts/optimize-images.js",
+        "build": "npm run optimize-images && vite build",
+        "preview": "vite preview",
         "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-        "preview": "vite preview"
+        "analyze": "vite-bundle-visualizer"
     },
     "keywords": [
         "école",
@@ -37,7 +39,12 @@
         "eslint-plugin-react-hooks": "^4.6.0",
         "eslint-plugin-react-refresh": "^0.4.5",
         "postcss": "^8.4.35",
+        "sharp": "^0.33.2",
         "tailwindcss": "^3.4.1",
-        "vite": "^5.1.0"
+        "terser": "^5.29.0",
+        "vite": "^5.1.0",
+        "vite-bundle-visualizer": "^1.0.1",
+        "vite-imagetools": "^6.2.8",
+        "vite-plugin-pwa": "^0.17.5"
     }
 }

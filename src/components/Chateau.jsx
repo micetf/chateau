@@ -1,4 +1,6 @@
+// src/components/Chateau.jsx - Version optimisée
 import { useEffect, useState, useCallback } from "react";
+import OptimizedImage from "./common/OptimizedImage";
 
 export function Chateau({ ordre, height, onLoad }) {
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -8,13 +10,36 @@ export function Chateau({ ordre, height, onLoad }) {
     const ORIGINAL_WIDTH = 1024;
     const WINDOW_SIZE = 52;
 
+    // Déterminer la meilleure taille d'image à charger en fonction de la hauteur demandée
+    const getOptimalImagePath = useCallback(
+        (baseImage) => {
+            // Calculer la largeur approximative nécessaire en fonction de la hauteur et du ratio
+            const aspectRatio = 1024 / 666; // Rapport largeur/hauteur de l'image
+            const estimatedWidth = height * aspectRatio;
+
+            // Choisir la meilleure taille parmi celles disponibles (400, 600, 800, 1024)
+            const availableSizes = [400, 600, 800, 1024];
+            let optimalSize = availableSizes[0];
+
+            for (const size of availableSizes) {
+                if (size >= estimatedWidth) {
+                    optimalSize = size;
+                    break;
+                }
+                optimalSize = size;
+            }
+
+            // Construire le chemin d'image avec la taille optimale
+            return `/img/${baseImage.replace(".png", "")}-${optimalSize}.webp`;
+        },
+        [height]
+    );
+
     // Charger l'image du château en fonction de l'ordre
     useEffect(() => {
-        const imagePath =
-            ordre === "0-99" ? "/img/chateau-inverse.png" : "/img/chateau.png";
-
         // Précharger l'image pour obtenir ses dimensions
         const img = new Image();
+
         img.onload = () => {
             // Calculer les dimensions en respectant le ratio
             const aspectRatio = img.width / img.height;
@@ -43,7 +68,10 @@ export function Chateau({ ordre, height, onLoad }) {
             }
         };
 
-        img.src = imagePath;
+        // Charger l'image pour obtenir ses dimensions (utiliser une image de taille normale)
+        const baseImage =
+            ordre === "0-99" ? "chateau-inverse.png" : "chateau.png";
+        img.src = `/img/${baseImage}`;
     }, [ordre, height, onLoad, isLoaded]);
 
     // Fonction pour recalculer les dimensions lors d'un redimensionnement
@@ -80,6 +108,9 @@ export function Chateau({ ordre, height, onLoad }) {
         return () => window.removeEventListener("resize", handleResize);
     }, [handleResize]);
 
+    const baseImage = ordre === "0-99" ? "chateau-inverse.png" : "chateau.png";
+    const imagePath = getOptimalImagePath(baseImage);
+
     return (
         <div className="flex justify-center w-full">
             <div
@@ -89,20 +120,24 @@ export function Chateau({ ordre, height, onLoad }) {
                 aria-label="Le château des nombres, tableau de nombres de 0 à 99 arrangés en forme de château"
             >
                 {dimensions.width > 0 && (
-                    <img
-                        src={
-                            ordre === "0-99"
-                                ? "/img/chateau-inverse.png"
-                                : "/img/chateau.png"
-                        }
+                    <OptimizedImage
+                        src={imagePath}
                         alt="Château des nombres"
                         width={dimensions.width}
                         height={dimensions.height}
+                        lazy={false} // L'image principale doit être chargée immédiatement
+                        placeholderColor="#1a3540"
                         style={{
                             display: "block",
-                            width: `${dimensions.width}px`,
-                            height: `${dimensions.height}px`,
                             objectFit: "contain",
+                        }}
+                        // Fallback pour les navigateurs qui ne supportent pas WebP
+                        onError={() => {
+                            const fallbackSrc = `/img/${baseImage}`;
+                            if (imagePath !== fallbackSrc) {
+                                return fallbackSrc;
+                            }
+                            return null;
                         }}
                     />
                 )}

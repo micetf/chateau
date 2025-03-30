@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Images optimisées générées automatiquement
+public/img/**/*.webp
+public/img/**/*.avif
+public/img/**/*-[0-9]*.png
+public/img/**/*-[0-9]*.jpg

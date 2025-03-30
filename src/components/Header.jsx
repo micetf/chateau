@@ -20,15 +20,6 @@ export const Header = forwardRef(function Header({}, ref) {
         return () => window.removeEventListener("scroll", handleScroll);
     }, [ref]);
 
-    // Gestionnaire du clic sur le bouton PayPal
-    const handlePaypalClick = (e) => {
-        e.preventDefault();
-        const paypalElement = document.getElementById("paypal");
-        if (paypalElement) {
-            paypalElement.click();
-        }
-    };
-
     // Gestionnaire pour ouvrir/fermer le menu mobile
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -132,7 +123,7 @@ export const Header = forwardRef(function Header({}, ref) {
                                 </span>
                             </a>
 
-                            {/* Bouton PayPal */}
+                            {/* Bouton PayPal - Formulaire direct comme dans le modèle */}
                             <form
                                 action="https://www.paypal.com/cgi-bin/webscr"
                                 method="post"
@@ -141,7 +132,6 @@ export const Header = forwardRef(function Header({}, ref) {
                             >
                                 <button
                                     type="submit"
-                                    onClick={handlePaypalClick}
                                     className="flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-text-primary px-3 py-2 rounded-md transition-colors duration-200"
                                     title="Si vous pensez que ces outils le méritent... Merci !"
                                 >
@@ -257,20 +247,33 @@ export const Header = forwardRef(function Header({}, ref) {
                             </svg>
                             <span>Contact</span>
                         </a>
-                        <button
-                            onClick={handlePaypalClick}
-                            className="flex items-center gap-2 px-3 py-2 rounded-md bg-yellow-600 hover:bg-yellow-700 transition-colors"
-                            title="Si vous pensez que ces outils le méritent... Merci !"
+                        {/* Version mobile du bouton PayPal */}
+                        <form
+                            action="https://www.paypal.com/cgi-bin/webscr"
+                            method="post"
+                            target="_top"
                         >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 20 20"
-                                className="h-5 w-5 fill-current"
+                            <button
+                                type="submit"
+                                className="flex w-full items-center gap-2 px-3 py-2 rounded-md bg-yellow-600 hover:bg-yellow-700 transition-colors"
+                                title="Si vous pensez que ces outils le méritent... Merci !"
                             >
-                                <path d="m10 3.22-.61-.6a5.5 5.5 0 0 0-7.78 7.77L10 18.78l8.39-8.4a5.5 5.5 0 0 0-7.78-7.77l-.61.61z"></path>
-                            </svg>
-                            <span>Faire un don</span>
-                        </button>
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    className="h-5 w-5 fill-current"
+                                >
+                                    <path d="m10 3.22-.61-.6a5.5 5.5 0 0 0-7.78 7.77L10 18.78l8.39-8.4a5.5 5.5 0 0 0-7.78-7.77l-.61.61z"></path>
+                                </svg>
+                                <span>Faire un don</span>
+                            </button>
+                            <input type="hidden" name="cmd" value="_s-xclick" />
+                            <input
+                                type="hidden"
+                                name="hosted_button_id"
+                                value="Q2XYVFP4EEX2J"
+                            />
+                        </form>
                     </div>
                 </div>
             )}

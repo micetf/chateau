@@ -13,18 +13,107 @@
             content="école, primaire, maths, ermel, structuration des nombres, château des nombres"
         />
         <meta name="author" content="Frédéric MISERY - Version du 28/03/2025" />
+        <meta name="theme-color" content="#536e7d" />
         <link rel="canonical" href="https://micetf.fr/chateau" />
+
+        <!-- Préchargement des polices -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+        <!-- Meta Open Graph pour partage sur réseaux sociaux -->
+        <meta property="og:title" content="Le château des nombres" />
+        <meta
+            property="og:description"
+            content="Application pédagogique pour l'apprentissage des nombres à l'école primaire"
+        />
+        <meta property="og:image" content="/img/og-image.jpg" />
+        <meta property="og:url" content="https://micetf.fr/chateau" />
+        <meta property="og:type" content="website" />
+
+        <!-- Favicons -->
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/img/icon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/img/apple-touch-icon.png" />
+
+        <!-- Préchargement des images critiques - utiliser les formats modernes avec fallback -->
+        <link
+            rel="preload"
+            as="image"
+            href="/img/chateau-800.webp"
+            type="image/webp"
+        />
+        <link
+            rel="preload"
+            as="image"
+            href="/img/chateau-inverse-800.webp"
+            type="image/webp"
+        />
+
+        <!-- Préchargement des images avec picture pour compatibilité -->
+        <link
+            rel="preload"
+            as="image"
+            imagesrcset="
+            /img/poubelle.webp type='image/webp',
+            /img/poubelle.png type='image/png'"
+        />
+
+        <!-- Support PWA -->
+        <link rel="manifest" href="/manifest.webmanifest" />
+
+        <!-- Styles critiques inline pour premier rendu -->
+        <style>
+            /* Styles critiques pour éviter le flash de contenu non stylé */
+            body {
+                background-color: #536e7d;
+                color: #f2dcb3;
+                text-align: center;
+                margin: 0;
+                padding: 0;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont,
+                    "Segoe UI", Roboto, sans-serif;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            /* Loading spinner */
+            .loading-spinner {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: #1a3540;
+                z-index: 9999;
+            }
+
+            .spinner {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                border: 5px solid #f2b28d;
+                border-top-color: transparent;
+                animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+        </style>
     </head>
     <body>
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+        </div>
+
         <div id="root"></div>
 
-        <!-- Préchargement des images -->
-        <link rel="preload" as="image" href="/img/chateau.png" />
-        <link rel="preload" as="image" href="/img/chateau-inverse.png" />
-        <link rel="preload" as="image" href="/img/poubelle.png" />
-        <link rel="preload" as="image" href="/img-micetf/don.gif" />
-
-        <!-- Éléments cachés requis par les composants -->
+        <!-- Élément caché requis pour la poubelle -->
         <img
             style="
                 position: fixed;
@@ -35,17 +124,55 @@
                 height: 0;
             "
             id="poubelle"
-            src="/img/poubelle.png"
+            src="/img/poubelle.webp"
+            onerror="this.onerror=null;this.src='/img/poubelle.png';"
             alt="Poubelle"
+            loading="lazy"
         />
-        <!-- Bouton PayPal caché - utilisé seulement pour être déclenché par le bouton dans la navbar -->
-        <input
-            style="display: none"
-            type="image"
-            id="paypal"
-            src="/img-micetf/don.gif"
-            alt="Faire un don"
-        />
+
+        <!-- Script principal avec attributs de chargement optimisés -->
         <script type="module" src="/src/main.jsx"></script>
+
+        <!-- Script pour supprimer le loader une fois le contenu chargé -->
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                // Attendre que l'application React soit montée
+                window.setTimeout(function () {
+                    // Afficher le body
+                    document.body.style.opacity = "1";
+
+                    // Supprimer le spinner après une transition
+                    const spinner = document.querySelector(".loading-spinner");
+                    if (spinner) {
+                        spinner.style.opacity = "0";
+                        spinner.style.transition = "opacity 0.3s ease";
+
+                        setTimeout(function () {
+                            spinner.remove();
+                        }, 300);
+                    }
+                }, 500);
+            });
+
+            // Détection de support WebP
+            function checkWebpSupport() {
+                const webpImg = new Image();
+                webpImg.onload = function () {
+                    const result = webpImg.width > 0 && webpImg.height > 0;
+                    localStorage.setItem(
+                        "webpSupport",
+                        result ? "true" : "false"
+                    );
+                };
+                webpImg.onerror = function () {
+                    localStorage.setItem("webpSupport", "false");
+                };
+                webpImg.src =
+                    "data:image/webp;base64,UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA==";
+            }
+
+            // Vérifier le support WebP au chargement
+            checkWebpSupport();
+        </script>
     </body>
 </html>

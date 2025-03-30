@@ -2,7 +2,6 @@ import { useRef, useEffect, useCallback } from "react";
 import Chateau from "./components/Chateau";
 import Header from "./components/Header";
 import ContactLink from "./components/ContactLink";
-import PaypalButton from "./components/PaypalButton";
 import DraggableCache from "./components/DraggableCache";
 import DraggableMasque from "./components/DraggableMasque";
 import HelpOverlay from "./components/HelpOverlay";
@@ -363,7 +362,6 @@ function App() {
             {/* Composants utilitaires */}
             <Trash />
             <ContactLink />
-            <PaypalButton />
 
             {/* Aide conditionnelle */}
             {showHelp && <HelpOverlay />}

@@ -1,0 +1,53 @@
+{
+    "name": "Le Château des Nombres",
+    "short_name": "Château",
+    "description": "Application pédagogique pour l'apprentissage des nombres à l'école primaire",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#1a3540",
+    "theme_color": "#536e7d",
+    "orientation": "any",
+    "icons": [
+        {
+            "src": "/img/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/img/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/img/icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/img/icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/img/screenshot-narrow.webp",
+            "sizes": "540x720",
+            "type": "image/webp",
+            "form_factor": "narrow"
+        },
+        {
+            "src": "/img/screenshot-wide.webp",
+            "sizes": "1024x600",
+            "type": "image/webp",
+            "form_factor": "wide"
+        }
+    ],
+    "categories": ["education", "kids", "mathematics"],
+    "lang": "fr-FR",
+    "dir": "ltr"
+}
