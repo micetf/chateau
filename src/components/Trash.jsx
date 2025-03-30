@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import "./Trash.css";
+import { useChateauContext } from "../contexts/ChateauContext";
 
 const Trash = () => {
     const [isActive, setIsActive] = useState(false);
+    const { windowSize } = useChateauContext();
 
     useEffect(() => {
         // Activer la poubelle qui est cachée par défaut dans index.html
@@ -80,6 +82,33 @@ const Trash = () => {
             }
         };
     }, []);
+
+    // Ajuster la position de la poubelle en fonction de la taille de l'écran
+    useEffect(() => {
+        const poubelleElement = document.getElementById("poubelle");
+        const dropZone = document.getElementById("trash-drop-zone");
+
+        if (poubelleElement && dropZone && windowSize) {
+            // Sur mobile, mettre la poubelle plus près du bord
+            if (windowSize.width < 768) {
+                poubelleElement.style.left = "10px";
+                poubelleElement.style.bottom = "10px";
+                poubelleElement.style.width = "48px";
+                poubelleElement.style.height = "48px";
+
+                dropZone.style.width = "100px";
+                dropZone.style.height = "100px";
+            } else {
+                poubelleElement.style.left = "20px";
+                poubelleElement.style.bottom = "20px";
+                poubelleElement.style.width = "64px";
+                poubelleElement.style.height = "64px";
+
+                dropZone.style.width = "120px";
+                dropZone.style.height = "120px";
+            }
+        }
+    }, [windowSize]);
 
     // Ce composant ne rend rien car il manipule directement l'élément poubelle existant
     return null;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import Chateau from "./components/Chateau";
 import Header from "./components/Header";
 import ContactLink from "./components/ContactLink";
@@ -7,182 +7,123 @@ import DraggableCache from "./components/DraggableCache";
 import DraggableMasque from "./components/DraggableMasque";
 import HelpOverlay from "./components/HelpOverlay";
 import Trash from "./components/Trash";
-import useDimensions from "./hooks/useDimensions"; // Importer notre nouveau hook
+import UndoRedoControls from "./components/UndoRedoControls";
+import DebugPanel from "./components/DebugPanel"; // En haut de votre fichier App.jsx
+import { useChateauContext } from "./contexts/ChateauContext";
 
 function App() {
-    const [windowSize, setWindowSize] = useState({
-        width: window.innerWidth,
-        height: window.innerHeight,
-    });
-    const headerRef = useRef(null);
-    const leftColumnRef = useRef(null);
-    const rightColumnRef = useRef(null);
-    const [headerHeight, setHeaderHeight] = useState(0);
-    const [ordre, setOrdre] = useState("99-0");
-    const [showHelp, setShowHelp] = useState(false);
-
-    // Utiliser notre hook de dimensions
+    // Utilisation du contexte au lieu des états locaux
     const {
+        ordre,
+        showHelp,
+        windowSize,
+        headerHeight,
         chateauDimensions,
         cellSize,
         masqueSize,
         isPortrait,
         isMobile,
-        layout,
-        calculateChateauDimensions,
-    } = useDimensions(windowSize, headerHeight);
+        cacheColors,
+        cachePositions,
+        masquePosition,
+        // Caches et masques créés par l'utilisateur
+        caches,
+        masques,
+        // Actions
+        toggleOrdre,
+        toggleHelp,
+        setHeaderHeight,
+        updateChateauDimensions,
+        calculatePositions,
+    } = useChateauContext();
 
-    // États pour les positions des éléments
-    const [cachePositions, setCachePositions] = useState([]);
-    const [masquePosition, setMasquePosition] = useState({ x: 0, y: 0 });
+    const headerRef = useRef(null);
+    const leftColumnRef = useRef(null);
+    const rightColumnRef = useRef(null);
 
-    // Couleurs des caches
-    const cacheColors = ["#B33514", "#FF9117", "#FF5700", "#0079B3", "#00FFEA"];
-
-    // Gestionnaire de redimensionnement optimisé
-    useEffect(() => {
-        const handleResize = () => {
-            setWindowSize({
-                width: window.innerWidth,
-                height: window.innerHeight,
-            });
-        };
-
-        const debouncedResize = () => {
-            clearTimeout(window.resizeTimeout);
-            window.resizeTimeout = setTimeout(handleResize, 100);
-        };
-
-        window.addEventListener("resize", debouncedResize);
-        handleResize(); // Initial call
-
-        return () => {
-            clearTimeout(window.resizeTimeout);
-            window.removeEventListener("resize", debouncedResize);
-        };
-    }, []);
-
-    // Mise à jour de la hauteur du header
+    // Mise à jour de la hauteur du header quand il change
     useEffect(() => {
         if (headerRef.current) {
             const height = headerRef.current.offsetHeight;
             setHeaderHeight(height);
         }
-    }, [windowSize]);
+    }, [windowSize, setHeaderHeight]);
 
-    // Fonction pour calculer les positions des éléments
-    const calculatePositions = useCallback(() => {
-        if (
-            !leftColumnRef.current ||
-            !rightColumnRef.current ||
-            cellSize <= 0
-        ) {
-            return;
-        }
-
-        // Calcul des positions des caches
-        const leftColumnRect = leftColumnRef.current.getBoundingClientRect();
-        const spacing = Math.max(5, Math.round(cellSize * 0.1));
-
-        if (isPortrait && isMobile) {
-            // Disposition horizontale pour mobile en portrait
-            const totalCachesWidth =
-                (cellSize + spacing) * cacheColors.length - spacing;
-            const startX =
-                leftColumnRect.left +
-                (leftColumnRect.width - totalCachesWidth) / 2;
-            const centerY =
-                leftColumnRect.top + (leftColumnRect.height - cellSize) / 2;
-
-            const positions = cacheColors.map((_, index) => ({
-                x: startX + index * (cellSize + spacing),
-                y: centerY,
-            }));
-
-            setCachePositions(positions);
-        } else {
-            // Disposition verticale standard
-            const totalCachesHeight =
-                (cellSize + spacing) * cacheColors.length - spacing;
-            const startY =
-                leftColumnRect.top +
-                (leftColumnRect.height - totalCachesHeight) / 2;
-            const centerX =
-                leftColumnRect.left + (leftColumnRect.width - cellSize) / 2;
-
-            const positions = cacheColors.map((_, index) => ({
-                x: centerX,
-                y: startY + index * (cellSize + spacing),
-            }));
-
-            setCachePositions(positions);
-        }
-
-        // Calcul de la position du masque
-        const rightColumnRect = rightColumnRef.current.getBoundingClientRect();
-
-        // Utiliser directement la taille du masque calculée par notre hook
-        const masqueCenterX =
-            rightColumnRect.left + (rightColumnRect.width - masqueSize) / 2;
-        const masqueCenterY =
-            rightColumnRect.top + (rightColumnRect.height - masqueSize) / 2;
-
-        setMasquePosition({
-            x: masqueCenterX,
-            y: masqueCenterY,
-            cellSize: cellSize, // Transmettre la même taille de cellule pour cohérence
-        });
-    }, [cellSize, masqueSize, cacheColors.length, isPortrait, isMobile]);
-
-    // Recalcul des positions lorsque les dimensions/orientation changent
+    // Recalculer les positions chaque fois que les dimensions changent
     useEffect(() => {
-        calculatePositions();
+        if (leftColumnRef.current && rightColumnRef.current && cellSize > 0) {
+            const leftColumnRect =
+                leftColumnRef.current.getBoundingClientRect();
+            const rightColumnRect =
+                rightColumnRef.current.getBoundingClientRect();
+
+            calculatePositions(leftColumnRect, rightColumnRect);
+        }
     }, [
-        calculatePositions,
-        windowSize,
         cellSize,
         chateauDimensions,
         headerHeight,
         isPortrait,
         isMobile,
+        calculatePositions,
     ]);
 
-    // Gestionnaire de chargement du château optimisé
+    // Gestionnaire de chargement du château
     const handleChateauLoad = useCallback(
         (width, cellData) => {
-            // Utiliser notre fonction centralisée de calcul des dimensions
-            calculateChateauDimensions(width, cellData);
+            updateChateauDimensions(width, width * 0.6503, cellData); // 0.6503 est le ratio hauteur/largeur
 
             // Recalcul après délai pour laisser le DOM se mettre à jour
             requestAnimationFrame(() => {
                 if (leftColumnRef.current && rightColumnRef.current) {
-                    calculatePositions();
+                    const leftColumnRect =
+                        leftColumnRef.current.getBoundingClientRect();
+                    const rightColumnRect =
+                        rightColumnRef.current.getBoundingClientRect();
+
+                    calculatePositions(leftColumnRect, rightColumnRect);
                 }
             });
         },
-        [calculateChateauDimensions, calculatePositions]
+        [updateChateauDimensions, calculatePositions]
     );
-
-    // Toggle de l'ordre des nombres
-    const toggleOrdre = useCallback(() => {
-        setOrdre((prev) => (prev === "0-99" ? "99-0" : "0-99"));
-    }, []);
-
-    // Toggle pour l'aide
-    const toggleHelp = useCallback(() => {
-        setShowHelp((prev) => !prev);
-    }, []);
 
     // Afficher l'aide au premier chargement
     useEffect(() => {
         const hasVisitedBefore = localStorage.getItem("chateau_visited");
         if (!hasVisitedBefore) {
             setTimeout(() => {
-                setShowHelp(true);
+                toggleHelp();
                 localStorage.setItem("chateau_visited", "true");
             }, 1000);
         }
-    }, []);
+    }, [toggleHelp]);
+
+    // Calcul dynamique du layout
+    const layout = (() => {
+        const mainHeight = windowSize.height - headerHeight;
+
+        if (isPortrait && isMobile) {
+            // Mode portrait sur mobile
+            const topRowHeight = Math.max(80, cellSize + 20);
+            const bottomRowHeight = Math.max(100, masqueSize + 20);
+            const mainAreaHeight = mainHeight - topRowHeight - bottomRowHeight;
+
+            return {
+                flexDirection: "column",
+                topRowHeight,
+                bottomRowHeight,
+                mainAreaHeight,
+                mainHeight,
+            };
+        } else {
+            // Mode paysage standard
+            return {
+                flexDirection: "row",
+                mainHeight,
+            };
+        }
+    })();
 
     return (
         <div className="flex flex-col min-h-screen bg-background">
@@ -213,17 +154,13 @@ function App() {
                                 cachePositions.length === cacheColors.length &&
                                 cacheColors.map((color, index) => (
                                     <DraggableCache
-                                        key={`cache-source-${index}`}
+                                        key={`cache-source-${color}`}
                                         color={color}
                                         size={cellSize}
                                         initialX={cachePositions[index].x}
                                         initialY={cachePositions[index].y}
                                         isSource={true}
                                         isSidebarItem={true}
-                                        dimensionsContext={{
-                                            cellSize,
-                                            masqueSize,
-                                        }}
                                     />
                                 ))}
                         </div>
@@ -240,6 +177,32 @@ function App() {
                                 height={layout.mainAreaHeight - 20}
                                 onLoad={handleChateauLoad}
                             />
+
+                            {/* Rendu des caches créés par l'utilisateur */}
+                            {caches.map((cache) => (
+                                <DraggableCache
+                                    key={cache.id}
+                                    id={cache.id}
+                                    color={cache.color}
+                                    size={cache.size}
+                                    initialX={cache.x}
+                                    initialY={cache.y}
+                                    isSource={false}
+                                />
+                            ))}
+
+                            {/* Rendu des masques créés par l'utilisateur */}
+                            {masques.map((masque) => (
+                                <DraggableMasque
+                                    key={masque.id}
+                                    id={masque.id}
+                                    cellSize={masque.cellSize}
+                                    initialX={masque.x}
+                                    initialY={masque.y}
+                                    isSource={false}
+                                    ordre={ordre}
+                                />
+                            ))}
                         </div>
 
                         {/* Rangée inférieure - Masque */}
@@ -259,7 +222,6 @@ function App() {
                                     isSource={true}
                                     ordre={ordre}
                                     isSidebarItem={true}
-                                    dimensionsContext={{ cellSize, masqueSize }}
                                 />
                             )}
                         </div>
@@ -284,17 +246,13 @@ function App() {
                                 cachePositions.length === cacheColors.length &&
                                 cacheColors.map((color, index) => (
                                     <DraggableCache
-                                        key={`cache-source-${index}`}
+                                        key={`cache-source-${color}`}
                                         color={color}
                                         size={cellSize}
                                         initialX={cachePositions[index].x}
                                         initialY={cachePositions[index].y}
                                         isSource={true}
                                         isSidebarItem={true}
-                                        dimensionsContext={{
-                                            cellSize,
-                                            masqueSize,
-                                        }}
                                     />
                                 ))}
                         </div>
@@ -314,6 +272,32 @@ function App() {
                                 height={layout.mainHeight - 40}
                                 onLoad={handleChateauLoad}
                             />
+
+                            {/* Rendu des caches créés par l'utilisateur */}
+                            {caches.map((cache) => (
+                                <DraggableCache
+                                    key={cache.id}
+                                    id={cache.id}
+                                    color={cache.color}
+                                    size={cache.size}
+                                    initialX={cache.x}
+                                    initialY={cache.y}
+                                    isSource={false}
+                                />
+                            ))}
+
+                            {/* Rendu des masques créés par l'utilisateur */}
+                            {masques.map((masque) => (
+                                <DraggableMasque
+                                    key={masque.id}
+                                    id={masque.id}
+                                    cellSize={masque.cellSize}
+                                    initialX={masque.x}
+                                    initialY={masque.y}
+                                    isSource={false}
+                                    ordre={ordre}
+                                />
+                            ))}
                         </div>
 
                         {/* Colonne droite - Masque */}
@@ -337,14 +321,13 @@ function App() {
                                     isSource={true}
                                     ordre={ordre}
                                     isSidebarItem={true}
-                                    dimensionsContext={{ cellSize, masqueSize }}
                                 />
                             )}
                         </div>
                     </div>
                 )}
 
-                {/* Boutons flottants adaptés pour mobile */}
+                {/* Boutons flottants */}
                 <div
                     className={`fixed ${
                         isMobile
@@ -352,6 +335,9 @@ function App() {
                             : "bottom-6 right-6 gap-4"
                     } flex flex-col items-end z-50`}
                 >
+                    {/* Contrôles Undo/Redo */}
+                    <UndoRedoControls />
+
                     {/* Sélecteur d'ordre */}
                     <button
                         onClick={toggleOrdre}
@@ -380,7 +366,8 @@ function App() {
             <PaypalButton />
 
             {/* Aide conditionnelle */}
-            {showHelp && <HelpOverlay onClose={toggleHelp} />}
+            {showHelp && <HelpOverlay />}
+            <DebugPanel />
         </div>
     );
 }

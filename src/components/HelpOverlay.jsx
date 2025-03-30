@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from "react";
+import { useChateauContext } from "../contexts/ChateauContext";
 
-const HelpOverlay = ({ onClose }) => {
+const HelpOverlay = () => {
+    const { toggleHelp } = useChateauContext();
     const overlayRef = useRef(null);
     const contentRef = useRef(null);
 
@@ -8,7 +10,7 @@ const HelpOverlay = ({ onClose }) => {
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.key === "Escape") {
-                onClose();
+                toggleHelp();
             }
         };
 
@@ -22,12 +24,12 @@ const HelpOverlay = ({ onClose }) => {
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
-    }, [onClose]);
+    }, [toggleHelp]);
 
     // Fermer quand on clique en dehors du contenu
     const handleOverlayClick = (e) => {
         if (e.target === overlayRef.current) {
-            onClose();
+            toggleHelp();
         }
     };
 
@@ -53,7 +55,7 @@ const HelpOverlay = ({ onClose }) => {
                         Comment utiliser le Château des Nombres
                     </h2>
                     <button
-                        onClick={onClose}
+                        onClick={toggleHelp}
                         className="text-text-secondary hover:text-text-primary transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-header"
                         aria-label="Fermer l'aide"
                     >
@@ -124,20 +126,18 @@ const HelpOverlay = ({ onClose }) => {
                     <div className="mb-3 sm:mb-4">
                         <h3 className="text-base sm:text-lg font-semibold text-text-secondary mb-1 sm:mb-2 flex items-center">
                             <span className="mr-2 text-text-primary">4.</span>
-                            Conseils d'utilisation
+                            Annuler / Rétablir
                         </h3>
                         <ul className="text-text-primary text-sm sm:text-base space-y-1 sm:space-y-2 pl-5 sm:pl-7">
                             <li className="list-disc">
-                                Combinez plusieurs caches pour mettre en
-                                évidence des structures numériques
+                                Utilisez les boutons d'annulation et de
+                                rétablissement pour revenir à des états
+                                précédents ou avancer à nouveau
                             </li>
                             <li className="list-disc">
-                                Utilisez les couleurs différentes pour
-                                distinguer divers concepts
-                            </li>
-                            <li className="list-disc">
-                                Le masque permet de travailler sur les relations
-                                entre nombres
+                                Chaque action (ajout/suppression de cache,
+                                changement d'ordre) est enregistrée dans
+                                l'historique
                             </li>
                         </ul>
                     </div>
@@ -145,7 +145,7 @@ const HelpOverlay = ({ onClose }) => {
 
                 <div className="text-center mt-4 sm:mt-6 sticky bottom-0 pb-2 pt-3 bg-background">
                     <button
-                        onClick={onClose}
+                        onClick={toggleHelp}
                         className="bg-header hover:bg-opacity-80 text-text-primary px-4 sm:px-6 py-1.5 sm:py-2 rounded-md font-medium transition-colors"
                         aria-label="Fermer l'aide"
                     >

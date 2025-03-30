@@ -1,82 +1,53 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Masque from "./Masque";
+import { useChateauContext } from "../contexts/ChateauContext";
 
 function DraggableMasque({
-    cellSize,
+    cellSize: propCellSize,
     initialX,
     initialY,
     isSource = false,
-    ordre = "99-0",
+    ordre: propOrdre,
     isSidebarItem = false,
-    dimensionsContext = null,
+    id: propId = null, // ID optionnel passé en prop
 }) {
-    // Utiliser les dimensions du contexte ou la taille par défaut
-    const currentCellSize = dimensionsContext
-        ? dimensionsContext.cellSize
-        : cellSize;
-    const masqueSize = dimensionsContext
-        ? dimensionsContext.masqueSize
-        : currentCellSize * 3;
+    // Utiliser le contexte
+    const {
+        cellSize: contextCellSize,
+        masqueSize: contextMasqueSize,
+        ordre: contextOrdre,
+        addMasque,
+        moveMasque,
+        removeMasque,
+    } = useChateauContext();
 
+    // Utiliser l'ordre du contexte si non spécifié en prop
+    const activeOrdre = propOrdre || contextOrdre;
+
+    // Utiliser les dimensions du contexte ou les props par défaut
+    const currentCellSize = contextCellSize || propCellSize;
+    const activeMasqueSize = contextMasqueSize || currentCellSize * 3;
+
+    // États locaux pour le drag-and-drop
     const [position, setPosition] = useState({ x: initialX, y: initialY });
     const [isDragging, setIsDragging] = useState(false);
-    const [clones, setClones] = useState([]);
     const [isVisible, setIsVisible] = useState(true);
-    const masqueRef = useRef(null);
-    const parentRef = useRef(null);
-    const offset = useRef({ x: 0, y: 0 });
-    const nextIdRef = useRef(0);
-    const [absolutePosition, setAbsolutePosition] = useState({
-        x: initialX,
-        y: initialY,
-    });
 
-    // Référence à la dernière position pour éviter les retours indésirables
-    const lastPositionRef = useRef({ x: initialX, y: initialY });
+    // Références
+    const masqueRef = useRef(null);
+    const offset = useRef({ x: 0, y: 0 });
+
+    // Générer un ID unique pour cet élément
+    const [id] = useState(
+        propId || (isSource ? "source-masque" : `masque-${Date.now()}`)
+    );
 
     // Synchroniser les positions initiales uniquement lors du montage ou si c'est une source
     useEffect(() => {
         if (isSource) {
             setPosition({ x: initialX, y: initialY });
-            setAbsolutePosition({ x: initialX, y: initialY });
-            lastPositionRef.current = { x: initialX, y: initialY };
         }
     }, [initialX, initialY, isSource]);
-
-    // Obtenir la référence au parent
-    useEffect(() => {
-        if (masqueRef.current && isSource) {
-            parentRef.current = masqueRef.current.parentElement;
-        }
-    }, [isSource]);
-
-    // Calculer la position absolue initiale lorsque le composant est monté
-    useEffect(() => {
-        if (masqueRef.current && isSource && isSidebarItem) {
-            const rect = masqueRef.current.getBoundingClientRect();
-            const parentRect =
-                masqueRef.current.parentElement.getBoundingClientRect();
-
-            // Positionner au centre du parent
-            const centerX =
-                parentRect.left + (parentRect.width - masqueSize) / 2;
-            const centerY =
-                parentRect.top + (parentRect.height - masqueSize) / 2;
-
-            setAbsolutePosition({ x: centerX, y: centerY });
-        }
-    }, [isSource, isSidebarItem, masqueSize]);
-
-    // Mettre à jour la position si la position absolue change (uniquement pour les sources)
-    useEffect(() => {
-        if (isSource && !isDragging) {
-            setPosition({ x: absolutePosition.x, y: absolutePosition.y });
-            lastPositionRef.current = {
-                x: absolutePosition.x,
-                y: absolutePosition.y,
-            };
-        }
-    }, [absolutePosition, isSource, isDragging]);
 
     // Fonction pour vérifier si les coordonnées sont au-dessus de la poubelle
     const isOverTrash = useCallback((x, y) => {
@@ -95,12 +66,12 @@ function DraggableMasque({
         );
     }, []);
 
-    // Fonction commune pour gérer la fin d'un glisser-déposer
+    // Fonction pour gérer la fin d'un glisser-déposer
     const handleDragEnd = useCallback(
         (clientX, clientY) => {
             if (!isDragging) return;
 
-            // Nouvelle position calculée
+            // Calculer la nouvelle position
             const newX = clientX - offset.current.x;
             const newY = clientY - offset.current.y;
 
@@ -113,38 +84,41 @@ function DraggableMasque({
                         masqueRef.current.classList.add("deleting");
                         setTimeout(() => {
                             setIsVisible(false);
+                            removeMasque(id);
                         }, 300);
                     } else {
                         setIsVisible(false);
+                        removeMasque(id);
                     }
                 }
             } else if (isDragging && isSource) {
-                // Si c'est une source et qu'on n'est pas sur la poubelle, créer un clone
-                const newId = nextIdRef.current++;
+                // Si c'est une source et qu'on n'est pas sur la poubelle, créer un nouveau masque
+                // Ajouter le masque à l'état global via le contexte
+                addMasque(newX, newY);
 
-                setClones((prev) => [
-                    ...prev,
-                    {
-                        id: newId,
-                        x: newX,
-                        y: newY,
-                    },
-                ]);
-
-                // Revenir à la position initiale pour la source
-                setPosition(absolutePosition);
-                lastPositionRef.current = absolutePosition;
-            } else {
+                // Revenir à la position initiale
+                setPosition({ x: initialX, y: initialY });
+            } else if (!isSource) {
                 // Si ce n'est pas une source et qu'on n'est pas sur la poubelle,
-                // mettre à jour la position et la sauvegarder dans lastPositionRef
+                // mettre à jour sa position dans l'état local et global
                 setPosition({ x: newX, y: newY });
-                lastPositionRef.current = { x: newX, y: newY };
+                moveMasque(id, newX, newY);
             }
 
             setIsDragging(false);
             document.body.style.cursor = "default";
         },
-        [isDragging, isSource, absolutePosition, isOverTrash]
+        [
+            isDragging,
+            isSource,
+            initialX,
+            initialY,
+            isOverTrash,
+            addMasque,
+            moveMasque,
+            removeMasque,
+            id,
+        ]
     );
 
     // Gestionnaires d'événements souris
@@ -179,27 +153,6 @@ function DraggableMasque({
             }
         };
     }, [isDragging, handleDragEnd]);
-
-    // Gérer le redimensionnement de la fenêtre
-    useEffect(() => {
-        const handleResize = () => {
-            if (masqueRef.current && isSource && isSidebarItem) {
-                const parentRect =
-                    masqueRef.current.parentElement.getBoundingClientRect();
-
-                // Recalculer le centrage
-                const centerX =
-                    parentRect.left + (parentRect.width - masqueSize) / 2;
-                const centerY =
-                    parentRect.top + (parentRect.height - masqueSize) / 2;
-
-                setAbsolutePosition({ x: centerX, y: centerY });
-            }
-        };
-
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, [isSource, isSidebarItem, masqueSize]);
 
     // Gestionnaire d'événement souris
     const handleMouseDown = (e) => {
@@ -286,72 +239,55 @@ function DraggableMasque({
         handleDragEnd(clientX, clientY);
     };
 
-    // Rendu des clones (uniquement si c'est une source)
-    const cloneElements = isSource
-        ? clones.map((clone) => (
-              <DraggableMasque
-                  key={clone.id}
-                  cellSize={currentCellSize}
-                  initialX={clone.x}
-                  initialY={clone.y}
-                  isSource={false}
-                  ordre={ordre}
-                  dimensionsContext={dimensionsContext}
-              />
-          ))
-        : null;
-
     // Si l'élément a été supprimé, ne rien rendre
     if (!isVisible) return null;
 
     return (
-        <>
-            <div
-                ref={masqueRef}
-                className="draggable-masque"
-                onMouseDown={handleMouseDown}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                style={{
-                    position: "fixed", // Utiliser fixed pour se positionner par rapport au viewport
-                    left: `${position.x}px`,
-                    top: `${position.y}px`,
-                    width: `${masqueSize}px`,
-                    height: `${masqueSize}px`,
-                    boxShadow: isDragging
-                        ? "0 8px 16px rgba(0,0,0,0.5)"
-                        : "0 4px 8px rgba(0,0,0,0.3)",
-                    cursor: isDragging ? "grabbing" : "grab",
-                    touchAction: "none", // Important pour éviter les comportements par défaut sur mobile
-                    zIndex: isDragging ? 1000 : isSource ? 100 : 500,
-                    transition: isDragging
-                        ? "none"
-                        : "box-shadow 0.2s, transform 0.2s",
-                    transform: isDragging ? "scale(1.05)" : "scale(1)",
-                    transformOrigin: "center",
-                    pointerEvents: "auto", // S'assurer que l'élément capture les événements souris
-                    userSelect: "none",
-                    WebkitUserSelect: "none", // Pour Safari
-                    WebkitTouchCallout: "none", // Désactiver le menu contextuel sur iOS
-                }}
-                title={
-                    isSource
-                        ? "Glisser pour créer un masque"
-                        : "Glisser ou déposer dans la poubelle pour supprimer"
-                }
-                aria-label={
-                    isSource
-                        ? `Masque d'opérations - glisser pour créer`
-                        : `Masque d'opérations - glisser ou déposer dans la poubelle pour supprimer`
-                }
-                role="button"
-                tabIndex={0} // Permettre la navigation au clavier
-            >
-                <Masque ordre={ordre} size={currentCellSize} />
-            </div>
-            {cloneElements}
-        </>
+        <div
+            ref={masqueRef}
+            className="draggable-masque"
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            style={{
+                position: "fixed", // Utiliser fixed pour se positionner par rapport au viewport
+                left: `${position.x}px`,
+                top: `${position.y}px`,
+                width: `${activeMasqueSize}px`,
+                height: `${activeMasqueSize}px`,
+                boxShadow: isDragging
+                    ? "0 8px 16px rgba(0,0,0,0.5)"
+                    : "0 4px 8px rgba(0,0,0,0.3)",
+                cursor: isDragging ? "grabbing" : "grab",
+                touchAction: "none", // Important pour éviter les comportements par défaut sur mobile
+                zIndex: isDragging ? 1000 : isSource ? 100 : 500,
+                transition: isDragging
+                    ? "none"
+                    : "box-shadow 0.2s, transform 0.2s",
+                transform: isDragging ? "scale(1.05)" : "scale(1)",
+                transformOrigin: "center",
+                pointerEvents: "auto", // S'assurer que l'élément capture les événements souris
+                userSelect: "none",
+                WebkitUserSelect: "none", // Pour Safari
+                WebkitTouchCallout: "none", // Désactiver le menu contextuel sur iOS
+            }}
+            title={
+                isSource
+                    ? "Glisser pour créer un masque"
+                    : "Glisser ou déposer dans la poubelle pour supprimer"
+            }
+            aria-label={
+                isSource
+                    ? `Masque d'opérations - glisser pour créer`
+                    : `Masque d'opérations - glisser ou déposer dans la poubelle pour supprimer`
+            }
+            role="button"
+            tabIndex={0} // Permettre la navigation au clavier
+            data-masque-id={id} // Ajouter un attribut de données pour faciliter la sélection
+        >
+            <Masque ordre={activeOrdre} size={currentCellSize} />
+        </div>
     );
 }
 

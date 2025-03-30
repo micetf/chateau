@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Cache from "./Cache";
+import { useChateauContext } from "../contexts/ChateauContext";
 
 function DraggableCache({
     color,
@@ -8,32 +9,26 @@ function DraggableCache({
     initialY,
     isSource = false,
     isSidebarItem = false,
-    dimensionsContext = null, // Nouveau paramètre pour le contexte de dimensions
+    id: propId = null, // ID optionnel passé en prop
 }) {
+    // Utiliser le contexte
+    const { cellSize, addCache, moveCache, removeCache } = useChateauContext();
+
+    // États locaux pour le drag-and-drop
     const [position, setPosition] = useState({ x: initialX, y: initialY });
     const [isDragging, setIsDragging] = useState(false);
-    const [clones, setClones] = useState([]);
     const [isVisible, setIsVisible] = useState(true);
+
+    // Références
     const cacheRef = useRef(null);
-    const parentRef = useRef(null);
     const offset = useRef({ x: 0, y: 0 });
-    const nextIdRef = useRef(0);
 
-    // Stocker les dimensions initiales pour la mise à l'échelle
-    const initialDimensionsRef = useRef({
-        cellSize: size,
-        windowWidth: window.innerWidth,
-        windowHeight: window.innerHeight,
-    });
+    // Générer un ID unique pour cet élément
+    const [id] = useState(
+        propId || (isSource ? `source-${color}` : `cache-${Date.now()}`)
+    );
 
-    // Obtenir la référence au parent
-    useEffect(() => {
-        if (cacheRef.current && isSource) {
-            parentRef.current = cacheRef.current.parentElement;
-        }
-    }, [isSource]);
-
-    // Mettre à jour la position si les coordonnées initiales changent
+    // Mettre à jour la position lorsque les coordonnées initiales changent
     useEffect(() => {
         if (isSource) {
             setPosition({ x: initialX, y: initialY });
@@ -57,31 +52,14 @@ function DraggableCache({
         );
     }, []);
 
-    // Mettre à jour les dimensions des clones lors d'un redimensionnement
-    useEffect(() => {
-        if (!dimensionsContext || clones.length === 0) return;
-
-        // Calculer le facteur d'échelle
-        const scaleFactorX =
-            window.innerWidth / initialDimensionsRef.current.windowWidth;
-        const scaleFactorY =
-            window.innerHeight / initialDimensionsRef.current.windowHeight;
-
-        // Mettre à jour les positions des clones
-        setClones((prevClones) =>
-            prevClones.map((clone) => ({
-                ...clone,
-                // Mettre à l'échelle les positions en fonction du redimensionnement de la fenêtre
-                x: clone.originalX ? clone.originalX * scaleFactorX : clone.x,
-                y: clone.originalY ? clone.originalY * scaleFactorY : clone.y,
-            }))
-        );
-    }, [dimensionsContext, window.innerWidth, window.innerHeight]);
-
     // Fonction pour gérer la fin d'un glisser-déposer
     const handleDragEnd = useCallback(
         (clientX, clientY) => {
             if (!isDragging) return;
+
+            // Calculer la nouvelle position
+            const newX = clientX - offset.current.x;
+            const newY = clientY - offset.current.y;
 
             // Vérifier si on a déposé sur la poubelle
             if (isOverTrash(clientX, clientY)) {
@@ -92,47 +70,42 @@ function DraggableCache({
                         cacheRef.current.classList.add("deleting");
                         setTimeout(() => {
                             setIsVisible(false);
+                            removeCache(id);
                         }, 300);
                     } else {
                         setIsVisible(false);
+                        removeCache(id);
                     }
                 }
             } else if (isDragging && isSource) {
-                // Si c'est une source et qu'on n'est pas sur la poubelle, créer un clone
-                const newId = nextIdRef.current++;
+                // Si c'est une source et qu'on n'est pas sur la poubelle, créer un nouveau cache
+                // Ajouter le cache à l'état global via le contexte
+                addCache(color, newX, newY);
 
-                // Calculer la position exacte pour le nouveau clone
-                const newX = clientX - offset.current.x;
-                const newY = clientY - offset.current.y;
-
-                // Stocker les positions normalisées pour la mise à l'échelle
-                const normalizedX = newX / window.innerWidth;
-                const normalizedY = newY / window.innerHeight;
-
-                setClones((prev) => [
-                    ...prev,
-                    {
-                        id: newId,
-                        x: newX,
-                        y: newY,
-                        color: color,
-                        originalX: newX,
-                        originalY: newY,
-                        normalizedX,
-                        normalizedY,
-                    },
-                ]);
-            }
-
-            // Si c'est une source, revenir à la position initiale
-            if (isSource) {
+                // Revenir à la position initiale
                 setPosition({ x: initialX, y: initialY });
+            } else if (!isSource) {
+                // Si ce n'est pas une source et qu'on n'est pas sur la poubelle,
+                // mettre à jour sa position dans l'état local et global
+                setPosition({ x: newX, y: newY });
+                moveCache(id, newX, newY);
             }
 
             setIsDragging(false);
             document.body.style.cursor = "default";
         },
-        [isDragging, isSource, color, initialX, initialY, isOverTrash]
+        [
+            isDragging,
+            isSource,
+            color,
+            initialX,
+            initialY,
+            isOverTrash,
+            addCache,
+            moveCache,
+            removeCache,
+            id,
+        ]
     );
 
     // Gestionnaire pour souris
@@ -253,75 +226,58 @@ function DraggableCache({
         handleDragEnd(clientX, clientY);
     };
 
-    // Utiliser les dimensions actuelles du contexte
-    const currentSize = dimensionsContext ? dimensionsContext.cellSize : size;
-
-    // Rendu des clones (uniquement si c'est une source)
-    const cloneElements = isSource
-        ? clones.map((clone) => (
-              <DraggableCache
-                  key={clone.id}
-                  color={clone.color}
-                  size={currentSize}
-                  initialX={clone.x}
-                  initialY={clone.y}
-                  isSource={false}
-                  dimensionsContext={dimensionsContext}
-              />
-          ))
-        : null;
+    // Utiliser la taille du contexte ou celle passée en prop
+    const currentSize = cellSize || size;
 
     // Si l'élément a été supprimé, ne rien rendre
     if (!isVisible) return null;
 
     return (
-        <>
-            <div
-                ref={cacheRef}
-                className="draggable-cache"
-                onMouseDown={handleMouseDown}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                style={{
-                    position: "fixed", // Utiliser fixed pour se positionner par rapport au viewport
-                    left: `${position.x}px`,
-                    top: `${position.y}px`,
-                    width: `${currentSize}px`,
-                    height: `${currentSize}px`,
-                    boxShadow: isDragging
-                        ? "0 8px 16px rgba(0,0,0,0.5)"
-                        : "0 4px 8px rgba(0,0,0,0.3)",
-                    cursor: isDragging ? "grabbing" : "grab",
-                    touchAction: "none", // Important pour éviter les comportements par défaut sur mobile
-                    zIndex: isDragging ? 1000 : isSource ? 100 : 500,
-                    transition: isDragging
-                        ? "none"
-                        : "box-shadow 0.2s, transform 0.2s",
-                    transform: isDragging ? "scale(1.05)" : "scale(1)",
-                    transformOrigin: "center",
-                    pointerEvents: "auto", // S'assurer que l'élément capture les événements souris
-                    userSelect: "none",
-                    WebkitUserSelect: "none", // Pour Safari
-                    WebkitTouchCallout: "none", // Désactiver le menu contextuel sur iOS
-                }}
-                title={
-                    isSource
-                        ? "Glisser pour créer un cache"
-                        : "Glisser ou déposer dans la poubelle pour supprimer"
-                }
-                aria-label={
-                    isSource
-                        ? `Cache ${color} - glisser pour créer`
-                        : `Cache ${color} - glisser ou déposer dans la poubelle pour supprimer`
-                }
-                role="button"
-                tabIndex={0} // Permettre la navigation au clavier
-            >
-                <Cache color={color} size={currentSize} />
-            </div>
-            {cloneElements}
-        </>
+        <div
+            ref={cacheRef}
+            className="draggable-cache"
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            style={{
+                position: "fixed", // Utiliser fixed pour se positionner par rapport au viewport
+                left: `${position.x}px`,
+                top: `${position.y}px`,
+                width: `${currentSize}px`,
+                height: `${currentSize}px`,
+                boxShadow: isDragging
+                    ? "0 8px 16px rgba(0,0,0,0.5)"
+                    : "0 4px 8px rgba(0,0,0,0.3)",
+                cursor: isDragging ? "grabbing" : "grab",
+                touchAction: "none", // Important pour éviter les comportements par défaut sur mobile
+                zIndex: isDragging ? 1000 : isSource ? 100 : 500,
+                transition: isDragging
+                    ? "none"
+                    : "box-shadow 0.2s, transform 0.2s",
+                transform: isDragging ? "scale(1.05)" : "scale(1)",
+                transformOrigin: "center",
+                pointerEvents: "auto", // S'assurer que l'élément capture les événements souris
+                userSelect: "none",
+                WebkitUserSelect: "none", // Pour Safari
+                WebkitTouchCallout: "none", // Désactiver le menu contextuel sur iOS
+            }}
+            title={
+                isSource
+                    ? "Glisser pour créer un cache"
+                    : "Glisser ou déposer dans la poubelle pour supprimer"
+            }
+            aria-label={
+                isSource
+                    ? `Cache ${color} - glisser pour créer`
+                    : `Cache ${color} - glisser ou déposer dans la poubelle pour supprimer`
+            }
+            role="button"
+            tabIndex={0} // Permettre la navigation au clavier
+            data-cache-id={id} // Ajouter un attribut de données pour faciliter la sélection
+        >
+            <Cache color={color} size={currentSize} />
+        </div>
     );
 }
 
