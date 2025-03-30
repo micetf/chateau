@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import CacheSvg from "./CacheSvg";
+import Cache from "./Cache";
 
 function DraggableCache({
     color,
@@ -182,7 +182,7 @@ function DraggableCache({
                         : "Glisser ou déposer dans la poubelle pour supprimer"
                 }
             >
-                <CacheSvg color={color} size={size} />
+                <Cache color={color} size={size} />
             </div>
             {cloneElements}
         </>

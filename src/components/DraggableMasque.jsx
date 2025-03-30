@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import MasqueSvg from "./MasqueSvg";
+import Masque from "./Masque";
 
 function DraggableMasque({
     cellSize,
@@ -239,7 +239,7 @@ function DraggableMasque({
                         : "Glisser ou déposer dans la poubelle pour supprimer"
                 }
             >
-                <MasqueSvg
+                <Masque
                     ordre={ordre}
                     size={adjustedCellSize}
                     baseColor="#FFFF99"

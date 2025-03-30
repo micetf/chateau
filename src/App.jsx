@@ -33,7 +33,7 @@ function App() {
     const [masquePosition, setMasquePosition] = useState({ x: 0, y: 0 });
 
     // Couleurs des caches
-    const cacheColors = ["#FF9117", "#B33514", "#FF5700", "#0079B3", "#00FFEA"];
+    const cacheColors = ["#B33514", "#FF9117", "#FF5700", "#0079B3", "#00FFEA"];
 
     // Détecter l'orientation et le type d'appareil
     useEffect(() => {
