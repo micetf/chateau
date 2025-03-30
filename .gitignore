@@ -29,3 +29,4 @@ public/img/**/*.avif
 public/img/**/*-[0-9]*.png
 public/img/**/*-[0-9]*.jpg
 screenshots/
+dev-dist/

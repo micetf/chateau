@@ -4,6 +4,7 @@
     "version": "2.0.0",
     "description": "Application web permettant de conduire des activités de structuration des nombres",
     "type": "module",
+    "base": ".",
     "scripts": {
         "dev": "vite",
         "optimize-images": "node scripts/optimize-images.js",

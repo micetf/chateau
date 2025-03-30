@@ -7,6 +7,7 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+    base: "./",
     assetsInclude: ["**/*.pdf"],
     plugins: [
         react(),
@@ -20,12 +21,9 @@ export default defineConfig({
         }),
         VitePWA({
             registerType: "prompt",
-            strategies: "injectManifest",
+            strategies: "generateSW",
             srcDir: "src",
             filename: "service-worker.js",
-            injectManifest: {
-                injectionPoint: "self.__WB_MANIFEST",
-            },
             workbox: {
                 globPatterns: [
                     "**/*.{js,css,html,png,jpg,jpeg,gif,svg,webp,avif,ico}",
@@ -53,14 +51,15 @@ export default defineConfig({
                     "Application pédagogique pour l'apprentissage des nombres",
                 theme_color: "#536e7d",
                 background_color: "#1a3540",
+                start_url: "./",
                 icons: [
                     {
-                        src: "/img/icon-192.png",
+                        src: "./img/icon-192.png",
                         sizes: "192x192",
                         type: "image/png",
                     },
                     {
-                        src: "/img/icon-512.png",
+                        src: "./img/icon-512.png",
                         sizes: "512x512",
                         type: "image/png",
                     },
